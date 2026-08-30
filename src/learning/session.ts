@@ -1,4 +1,5 @@
 import type { DiagnosticQuestion, EvaluationResult } from './contracts.ts';
+import type { PersistedLearningSession, PersistedTurn } from './history.ts';
 
 export type LearningSessionStatus =
   | 'idle'
@@ -6,10 +7,14 @@ export type LearningSessionStatus =
   | 'answering'
   | 'evaluating'
   | 'feedback'
+  | 'reviewing'
   | 'error'
   | 'ended';
 
 export type LearningSession = {
+  sessionId: string;
+  questionId: string;
+  nextQuestionId: string;
   status: LearningSessionStatus;
   topic: string;
   currentQuestion: string;
@@ -19,11 +24,20 @@ export type LearningSession = {
   turn: number;
   errorMessage: string;
   retryStatus: 'loading_question' | 'evaluating' | null;
+  history: PersistedTurn[];
 };
 
 export type LearningSessionEvent =
   | { type: 'start'; topic: string }
   | { type: 'question_received'; question: DiagnosticQuestion }
+  | { type: 'session_started'; session: PersistedLearningSession }
+  | { type: 'session_loaded'; session: PersistedLearningSession }
+  | {
+      type: 'evaluation_persisted';
+      session: PersistedLearningSession;
+      submittedQuestionId: string;
+    }
+  | { type: 'session_ended'; session: PersistedLearningSession }
   | { type: 'answer_changed'; answer: string }
   | { type: 'submit' }
   | { type: 'evaluation_received'; evaluation: EvaluationResult }
@@ -34,6 +48,9 @@ export type LearningSessionEvent =
   | { type: 'restart' };
 
 export const initialLearningSession: LearningSession = {
+  sessionId: '',
+  questionId: '',
+  nextQuestionId: '',
   status: 'idle',
   topic: '',
   currentQuestion: '',
@@ -43,7 +60,28 @@ export const initialLearningSession: LearningSession = {
   turn: 1,
   errorMessage: '',
   retryStatus: null,
+  history: [],
 };
+
+function activeSessionState(
+  session: PersistedLearningSession,
+): LearningSession {
+  const turn = session.turns.find(
+    (item) => item.questionId === session.currentQuestionId,
+  );
+  if (!turn) throw new Error('Persisted session has no current question.');
+  return {
+    ...initialLearningSession,
+    sessionId: session.id,
+    questionId: turn.questionId,
+    status: 'answering',
+    topic: session.topic,
+    currentQuestion: turn.question,
+    questionIntent: turn.intent,
+    turn: turn.turn,
+    history: session.turns,
+  };
+}
 
 export function learningSessionReducer(
   state: LearningSession,
@@ -68,6 +106,41 @@ export function learningSessionReducer(
         questionIntent: event.question.intent,
         errorMessage: '',
         retryStatus: null,
+      };
+    case 'session_started':
+      return activeSessionState(event.session);
+    case 'session_loaded':
+      if (event.session.status === 'active') {
+        return activeSessionState(event.session);
+      }
+      return {
+        ...initialLearningSession,
+        sessionId: event.session.id,
+        status: 'reviewing',
+        topic: event.session.topic,
+        turn: event.session.turns.length,
+        history: event.session.turns,
+      };
+    case 'evaluation_persisted': {
+      const submitted = event.session.turns.find(
+        (item) => item.questionId === event.submittedQuestionId,
+      );
+      if (state.status !== 'evaluating' || !submitted?.evaluation) return state;
+      return {
+        ...state,
+        status: 'feedback',
+        evaluation: submitted.evaluation,
+        nextQuestionId: event.session.currentQuestionId,
+        history: event.session.turns,
+      };
+    }
+    case 'session_ended':
+      return {
+        ...state,
+        status: 'ended',
+        errorMessage: '',
+        retryStatus: null,
+        history: event.session.turns,
       };
     case 'answer_changed':
       if (state.status !== 'answering' && state.status !== 'error')
@@ -120,6 +193,8 @@ export function learningSessionReducer(
       return {
         ...state,
         status: 'answering',
+        questionId: state.nextQuestionId || state.questionId,
+        nextQuestionId: '',
         currentQuestion: state.evaluation.nextQuestion,
         questionIntent: state.evaluation.nextQuestionRationale,
         answer: '',
