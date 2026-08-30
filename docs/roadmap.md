@@ -11,28 +11,30 @@ Outcome: a maintainable, packageable Mac desktop shell with no product functiona
 - Linting, formatting, type checking, and smoke tests
 - Product specification, architecture record, and task plan
 
-## Phase 1: Deterministic Session Shell
+## Phase 1: First AI Learning Loop
 
-Outcome: the learner can start, complete, reopen, and delete a local mock learning session without an AI provider.
-
-- Topic entry and one-question-at-a-time interface
-- Text answer capture and immutable attempt history
-- Deterministic mock evaluations and next moves
-- SQLite persistence with migrations and backup/export strategy
-
-Decision gate: confirm that the question-answer-feedback rhythm feels focused and that persistence is trustworthy.
-
-## Phase 2: Constrained AI Evaluation
-
-Outcome: real model output can evaluate an answer without becoming a lecturer.
+Outcome: a learner can complete a genuine provider-backed question, answer, feedback, and next-question loop. Learner-facing evaluation is never scripted.
 
 - Provider credential storage in the main process
+- Topic entry and AI-generated diagnostic question
 - Structured evaluation and next-question contract
 - Runtime validation and explicit uncertainty
 - Evaluation fixtures across strong, partial, mistaken, and ambiguous answers
 - Provider failure, retry, and offline behavior
+- In-memory session state with immutable submitted answers
 
-Decision gate: verify that evaluations cite the learner's answer, remain brief, and expose useful gaps reliably enough for a small founder test set.
+Decision gate: verify that evaluations cite the learner's exact answer, remain brief, avoid premature explanations, and expose useful gaps reliably enough for a small founder test set.
+
+## Phase 2: Local Session Persistence
+
+Outcome: the learner can reopen, inspect, and delete local AI learning sessions without depending on a cloud account.
+
+- SQLite persistence with versioned migrations
+- Immutable attempts and append-only evaluation history
+- Resume and session-history interface
+- Transaction, interruption, backup, and export strategy
+
+Decision gate: confirm that acknowledged attempts survive interruption and that local data remains understandable and recoverable.
 
 ## Phase 3: Adaptive Questioning
 
