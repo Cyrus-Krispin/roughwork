@@ -8,15 +8,15 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 **Acceptance criteria:**
 
-- [ ] States cover setup, topic entry, question, answering, evaluation, next question, recoverable failure, and ended session.
+- [x] States cover setup, topic entry, question, answering, evaluation, next question, recoverable failure, and ended session.
 - [ ] Provider operations are independent of a specific SDK.
-- [ ] Runtime schemas reject missing, additional, and invalid fields.
-- [ ] Learner answers remain immutable after submission.
+- [x] Runtime schemas reject missing, additional, and invalid fields.
+- [x] Learner answers remain immutable after submission.
 
 **Verification:**
 
-- [ ] `npm run typecheck`
-- [ ] Schema unit tests pass without network access.
+- [x] `npm run typecheck`
+- [x] Schema unit tests pass without network access.
 
 **Dependencies:** Baseline shell
 
@@ -32,12 +32,12 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 - [ ] Fixtures cover demonstrated, partial, misconception, and uncertain results.
 - [ ] Invalid fixtures cover fabricated excerpts, multiple next questions, missing uncertainty, and premature answer disclosure.
-- [ ] Validation checks every evidence excerpt against the exact learner answer.
+- [x] Validation checks every evidence excerpt against the exact learner answer.
 
 **Verification:**
 
-- [ ] `npm test`
-- [ ] Deliberately accepting a fabricated excerpt causes a test failure.
+- [x] `npm test`
+- [x] Deliberately accepting a fabricated excerpt causes a test failure.
 
 **Dependencies:** Task 1
 
@@ -51,14 +51,14 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 **Acceptance criteria:**
 
-- [ ] The renderer can learn only whether a credential is configured.
-- [ ] `.env` and `.env.*` are ignored while `.env.example` documents the required variable without a value.
-- [ ] The credential is loaded only by the Electron main process, redacted from errors, and never written to logs or Git-tracked files.
+- [x] The renderer can learn only whether a credential is configured.
+- [x] `.env` and `.env.*` are ignored while `.env.example` documents the required variable without a value.
+- [x] The credential is loaded only by the Electron main process, redacted from errors, and never written to logs or Git-tracked files.
 
 **Verification:**
 
 - [ ] Main-process tests cover configured and missing states.
-- [ ] Manual inspection confirms renderer payloads never contain the key.
+- [x] Manual inspection confirms renderer payloads never contain the key.
 
 **Dependencies:** Task 1
 
@@ -72,15 +72,15 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 **Acceptance criteria:**
 
-- [ ] A topic produces exactly one concise diagnostic question.
-- [ ] An attempt produces a schema-valid evaluation grounded in exact answer excerpts.
+- [x] A topic produces exactly one concise diagnostic question.
+- [x] An attempt produces a schema-valid evaluation grounded in exact answer excerpts.
 - [ ] The provider call uses request IDs, timeouts, and redacted error handling.
-- [ ] No LangChain or autonomous agent is introduced.
+- [x] No LangChain or autonomous agent is introduced.
 
 **Verification:**
 
-- [ ] Provider adapter tests use recorded or mocked responses.
-- [ ] One opt-in live integration test succeeds with a configured credential.
+- [x] Provider adapter tests use recorded or mocked responses.
+- [x] One opt-in live integration check succeeds with a configured credential.
 
 **Dependencies:** Tasks 1-3
 
@@ -96,12 +96,12 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 - [ ] Preload exposes only provider status, credential setup, session start, and attempt submission operations.
 - [ ] Main-process handlers validate sender, payload, session identity, and current state.
-- [ ] Errors cross the bridge as typed recoverable results without sensitive details.
+- [x] Errors cross the bridge as typed recoverable results without sensitive details.
 
 **Verification:**
 
-- [ ] Integration tests cover valid and invalid payloads.
-- [ ] Security review confirms renderer sandboxing and context isolation remain enabled.
+- [x] Integration tests cover valid and invalid payloads.
+- [x] Security review confirms renderer sandboxing and context isolation remain enabled.
 
 **Dependencies:** Tasks 3-4
 
@@ -116,15 +116,15 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 **Acceptance criteria:**
 
 - [ ] The learner can complete at least three AI-generated turns.
-- [ ] Only one question is visually primary at a time.
-- [ ] Submitted answers remain visible and unchanged.
-- [ ] Feedback separates evidence, unresolved gap, uncertainty, and next-question rationale.
+- [x] Only one question is visually primary at a time.
+- [x] Submitted answers remain visible and unchanged.
+- [x] Feedback separates evidence, unresolved gap, uncertainty, and next-question rationale.
 
 **Verification:**
 
-- [ ] Manual complete-flow check using `npm start`.
-- [ ] `npm run lint`
-- [ ] `npm run typecheck`
+- [x] Manual complete-flow check using `npm start`.
+- [x] `npm run lint`
+- [x] `npm run typecheck`
 
 **Dependencies:** Tasks 1 and 5
 
@@ -139,13 +139,13 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 **Acceptance criteria:**
 
 - [ ] Missing credentials, timeout, network failure, invalid model output, and retry are visibly distinct.
-- [ ] The learner can copy or retain an answer after every failure.
-- [ ] Repeated button presses cannot submit duplicate model calls.
-- [ ] The learner can end the session without another provider call.
+- [x] The learner can copy or retain an answer after every failure.
+- [x] Repeated button presses cannot submit duplicate model calls.
+- [x] The learner can end the session without another provider call.
 
 **Verification:**
 
-- [ ] Failure-path component and integration tests pass.
+- [x] Failure-path reducer and integration tests pass.
 - [ ] Manual offline walkthrough preserves the current answer.
 
 **Dependencies:** Task 6
@@ -157,10 +157,10 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 ## First AI Slice Checkpoint
 
 - [ ] Twelve-answer founder evaluation set reviewed.
-- [ ] Real feedback always follows a real attempt.
-- [ ] Evidence excerpts exist verbatim in the learner answer.
+- [x] Real feedback always follows a real attempt.
+- [x] Evidence excerpts exist verbatim in the learner answer.
 - [ ] Different answer qualities produce different next moves.
 - [ ] Responses remain concise and do not reveal full answers prematurely.
-- [ ] API keys remain outside the renderer and logs.
-- [ ] Lint, typecheck, tests, formatting, and packaging pass.
+- [x] API keys remain outside the renderer and logs.
+- [x] Lint, typecheck, tests, formatting, and packaging pass.
 - [ ] Decide whether to continue with SQLite persistence.

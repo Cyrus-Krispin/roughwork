@@ -1,6 +1,6 @@
 # ThinkEdge Architecture
 
-Status: Planned architecture; only the baseline shell is implemented initially.
+Status: Phase 1 implemented; persistence and longitudinal learning remain planned.
 
 ## Decision Summary
 
@@ -27,16 +27,19 @@ Electron main process
   secure settings
 ```
 
-## Current Baseline
+## Current Phase 1 Architecture
 
-The baseline proves only these boundaries:
+The first learning slice now implements these boundaries:
 
 - Electron controls the application lifecycle and desktop window.
 - React owns the renderer UI.
 - TypeScript checks both environments.
 - Electron Forge packages the application.
-
-No inter-process API is exposed until a product slice needs one.
+- The main process calls DeepSeek V4 Flash and validates structured output.
+- A narrow preload API exposes provider status, question generation, and answer
+  evaluation without exposing raw IPC or the provider key.
+- The renderer owns an in-memory learning state machine and preserves submitted
+  answers across recoverable provider failures.
 
 ## Planned Process Responsibilities
 

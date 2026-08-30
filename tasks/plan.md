@@ -22,6 +22,7 @@ Learner names topic
 ## Architecture Decisions
 
 - Integrate one provider directly for the first slice; do not introduce LangChain or LangGraph yet.
+- Use `deepseek-v4-flash` for the initial iteration; optimize prompts and evaluate quality before considering a more expensive model.
 - Load the first development credential from an ignored local `.env` file and keep provider calls in the Electron main process. The renderer receives only typed learning results.
 - Use a narrow provider interface so a second provider can be added later without redesigning the session domain.
 - Require structured output and runtime validation for every model response.
@@ -80,34 +81,34 @@ The first version needs loading, retry, invalid-response, missing-credential, ne
 
 ### Phase 1: Define and test the AI boundary
 
-- [ ] Task 1: Define session states, provider interface, and validated model schemas
+- [x] Task 1: Define session states, provider interface, and validated model schemas
 - [ ] Task 2: Add contract fixtures for demonstrated, partial, misconception, uncertain, malformed, and answer-leaking outputs
 
 ### Checkpoint: AI contract
 
-- [ ] Invalid output cannot enter session state
-- [ ] Evidence must point to exact learner text
-- [ ] Exactly one next move and one next question are accepted
-- [ ] Test fixtures do not require a network call
+- [x] Invalid output cannot enter session state
+- [x] Evidence must point to exact learner text
+- [x] Exactly one next move and one next question are accepted
+- [x] Test fixtures do not require a network call
 
 ### Phase 2: Connect one provider securely
 
-- [ ] Task 3: Load the ignored local provider credential in the Electron main process
-- [ ] Task 4: Implement diagnostic-question and evaluation calls through the provider interface
-- [ ] Task 5: Expose narrow typed preload operations and validate IPC senders and payloads
+- [x] Task 3: Load the ignored local provider credential in the Electron main process
+- [x] Task 4: Implement diagnostic-question and evaluation calls through the provider interface
+- [x] Task 5: Expose narrow typed preload operations and validate IPC senders and payloads
 
 ### Checkpoint: Provider integration
 
-- [ ] The API key never enters renderer state, logs, or source control
-- [ ] A real topic produces one diagnostic question
-- [ ] A real answer produces a schema-valid evaluation and next question
-- [ ] Provider, network, timeout, and validation errors leave the answer recoverable
+- [x] The API key never enters renderer state, logs, or source control
+- [x] A real topic produces one diagnostic question
+- [x] A real answer produces a schema-valid evaluation and next question
+- [x] Provider, network, timeout, and validation errors leave the answer recoverable
 
 ### Phase 3: Build the complete learning interaction
 
-- [ ] Task 6: Implement the topic, question, answer, feedback, next-question, and end-session UI
+- [x] Task 6: Implement the topic, question, answer, feedback, next-question, and end-session UI
 - [ ] Task 7: Add loading, retry, cancel, and failure recovery without duplicate model requests
-- [ ] Task 8: Make evidence, uncertainty, unresolved gap, and next-question rationale clear and accessible
+- [x] Task 8: Make evidence, uncertainty, unresolved gap, and next-question rationale clear and accessible
 
 ### Checkpoint: First AI product slice
 
