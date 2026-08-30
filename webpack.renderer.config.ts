@@ -9,6 +9,9 @@ rules.push({
 });
 
 export const rendererConfig: Configuration = {
+  // Keep the renderer compatible with the production CSP. Webpack's default
+  // development source map uses eval(), which Electron correctly blocks.
+  devtool: 'source-map',
   module: {
     rules,
   },

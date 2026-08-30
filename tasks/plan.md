@@ -1,124 +1,174 @@
-# Implementation Plan: ThinkEdge
+# Implementation Plan: ThinkEdge AI Learning Loop
 
 ## Overview
 
-Build ThinkEdge as narrow, local-first vertical learning loops. After the secure Electron/React baseline, validate the interaction rhythm with deterministic data before adding a model. Then test constrained evaluation, adaptive questioning, retention, and finally an evidence graph.
+Build the smallest honest version of ThinkEdge: a learner enters a topic, an AI provider asks one diagnostic question, the learner answers in their own words, and AI returns validated evidence-based feedback plus exactly one adaptive next question. The session remains in memory for this first slice; persistence, sources, retention, and the knowledge graph follow only after the AI loop is useful.
+
+There will be no scripted learner feedback in the product. Fixtures are used only in automated tests to verify the AI contract and failure handling.
+
+## Product Question
+
+Can ThinkEdge use AI to expose a specific gap in a learner's answer and choose a useful next question without becoming an explanatory chatbot?
+
+```text
+Learner names topic
+  -> AI creates diagnostic question
+      -> learner submits attempt
+          -> AI evaluates evidence and uncertainty
+              -> application validates the result
+                  -> AI-proposed next question is shown
+```
 
 ## Architecture Decisions
 
-- Use Electron, React, and TypeScript so the desktop shell and interface share a widely supported ecosystem.
-- Keep privileged work and model calls in the Electron main process behind task-specific preload methods.
-- Model a learning session as explicit deterministic states; treat model output as untrusted input to those states.
-- Call the first model provider directly and validate structured responses; do not add LangChain or another orchestration framework initially.
-- Store learner data locally first and introduce remote infrastructure only after a validated need.
-- Derive future graph claims from preserved answer evidence, never from unsupported model summaries.
+- Integrate one provider directly for the first slice; do not introduce LangChain or LangGraph yet.
+- Use `deepseek-v4-flash` for the initial iteration; optimize prompts and evaluate quality before considering a more expensive model.
+- Load the first development credential from an ignored local `.env` file and keep provider calls in the Electron main process. The renderer receives only typed learning results.
+- Use a narrow provider interface so a second provider can be added later without redesigning the session domain.
+- Require structured output and runtime validation for every model response.
+- Preserve the learner's answer exactly and require every positive or negative finding to quote an exact excerpt from it.
+- Let the model propose a next move; deterministic code enforces one-question pacing, allowed transitions, and help limits.
+- Keep the first session in memory. SQLite becomes the next vertical slice after the AI interaction passes its decision gate.
 
-## Dependency Graph
+## First Model Contract
+
+The first slice needs two model operations:
+
+1. `createDiagnosticQuestion(topic)`
+2. `evaluateAttemptAndContinue(context)`
+
+The second operation returns:
+
+```ts
+type EvaluationResult = {
+  status: 'demonstrated' | 'partial' | 'misconception' | 'uncertain';
+  evidence: Array<{
+    excerpt: string;
+    finding: string;
+  }>;
+  unresolvedGap: string;
+  uncertainty: 'low' | 'medium' | 'high';
+  proposedNextMove: 'probe' | 'advance' | 'prerequisite' | 'hint';
+  nextQuestion: string;
+  nextQuestionRationale: string;
+};
+```
+
+Application validation must reject a response when:
+
+- an evidence excerpt is not an exact substring of the learner's answer;
+- a required field is missing or outside its allowed values;
+- more than one next question is returned;
+- the response presents a full answer or unrequested lecture;
+- the result cannot be associated with the current attempt.
+
+## First User Flow
 
 ```text
-Desktop baseline
-    |
-    v
-Deterministic local session
-    |
-    v
-Constrained AI evaluation
-    |
-    v
-Adaptive question and help selection
-    |
-    v
-Retention and optional sources
-    |
-    v
-Evidence graph and learning frontier
+Local `.env` setup
+  -> New session
+      -> Enter topic
+          -> AI question
+              -> Write and submit answer
+                  -> AI feedback
+                      -> Continue to next question
+                          -> End session
 ```
+
+The first version needs loading, retry, invalid-response, missing-credential, network-failure, and explicit end-session states.
 
 ## Task List
 
-### Phase 0: Foundation
+### Phase 1: Define and test the AI boundary
 
-- [x] Task 0: Establish the Electron/React/TypeScript baseline
-- [ ] Task 1: Add deterministic unit and application smoke-test harnesses
-- [ ] Task 2: Record packaging, security, and development conventions
+- [x] Task 1: Define session states, provider interface, and validated model schemas
+- [ ] Task 2: Add contract fixtures for demonstrated, partial, misconception, uncertain, malformed, and answer-leaking outputs
 
-### Checkpoint: Foundation
+### Checkpoint: AI contract
 
-- [ ] The app launches on macOS
-- [ ] Linting, type checking, tests, formatting, and packaging pass
-- [ ] No product dependency or feature has been added
-- [ ] Founder reviews the updated product direction and MVP boundary
+- [x] Invalid output cannot enter session state
+- [x] Evidence must point to exact learner text
+- [x] Exactly one next move and one next question are accepted
+- [x] Test fixtures do not require a network call
 
-### Phase 1: Deterministic Session Shell
+### Phase 2: Connect one provider securely
 
-- [ ] Task 3: Define session, question, attempt, evaluation, and help-ladder domain states with tests
-- [ ] Task 4: Build the topic, question, text-answer, feedback, and session-summary interface using fixtures
-- [ ] Task 5: Persist and reopen immutable session history using a versioned local schema
+- [x] Task 3: Load the ignored local provider credential in the Electron main process
+- [x] Task 4: Implement diagnostic-question and evaluation calls through the provider interface
+- [x] Task 5: Expose narrow typed preload operations and validate IPC senders and payloads
 
-### Checkpoint: Session Shell
+### Checkpoint: Provider integration
 
-- [ ] The full loop works offline with deterministic fixtures
-- [ ] The UI shows one question at a time and never overwrites an answer
-- [ ] Simulated interruption does not lose acknowledged attempts
+- [x] The API key never enters renderer state, logs, or source control
+- [x] A real topic produces one diagnostic question
+- [x] A real answer produces a schema-valid evaluation and next question
+- [x] Provider, network, timeout, and validation errors leave the answer recoverable
 
-### Phase 2: Constrained AI Evaluation
+### Phase 3: Build the complete learning interaction
 
-- [ ] Task 6: Define a structured evaluation and next-question contract with adversarial fixtures
-- [ ] Task 7: Store provider credentials securely and call the provider from the main process
-- [ ] Task 8: Validate, persist, and display brief evidence-grounded evaluations and explicit uncertainty
+- [x] Task 6: Implement the topic, question, answer, feedback, next-question, and end-session UI
+- [ ] Task 7: Add loading, retry, cancel, and failure recovery without duplicate model requests
+- [x] Task 8: Make evidence, uncertainty, unresolved gap, and next-question rationale clear and accessible
 
-### Checkpoint: AI Evaluation
+### Checkpoint: First AI product slice
 
-- [ ] The model cites the learner's answer and distinguishes partial knowledge from error
-- [ ] No full explanation appears before an attempt unless explicitly requested
-- [ ] Provider and validation failures preserve the session and explain recovery
+- [ ] A learner can complete at least three genuine AI-generated turns
+- [ ] ThinkEdge never displays feedback before an attempt
+- [ ] Feedback cites the learner's own words
+- [ ] Strong, partial, mistaken, and ambiguous test answers produce meaningfully different next moves
+- [ ] The system stays concise and asks one question at a time
+- [ ] Ending the session never requires waiting for another model call
+- [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run format:check`, and `npm run package` pass
 
-### Phase 3: Adaptive Questioning
+## Initial Evaluation Set
 
-- [ ] Task 9: Implement probe, advance, prerequisite, and hint transition rules
-- [ ] Task 10: Add the graduated help ladder and learner challenge workflow
-- [ ] Task 11: Generate and preserve session summaries with demonstrated evidence and unresolved gaps
+Before founder review, create a small test set for one topic such as gradient-based neural-network training:
 
-### Checkpoint: Adaptive Loop
+- 3 substantially correct answers;
+- 3 partial answers;
+- 3 answers containing common misconceptions;
+- 3 ambiguous or poorly worded answers.
 
-- [ ] Strong, partial, mistaken, and ambiguous answers lead to meaningfully different next moves
-- [ ] A complete session reveals useful gaps without becoming a lecture
-- [ ] Model judgments remain provisional and correctable
+For each case, record the acceptable status, required concept evidence, forbidden claims, and acceptable next-move categories. The evaluation set measures behavior across prompt or model changes; it is not learner-facing scripted feedback.
 
-### Phase 4: Retention and Sources
+## Not Doing in This Slice
 
-- [ ] Task 12: Add an evidence-based revisit queue and delayed-recall checks
-- [ ] Task 13: Accept an optional source and preserve its provenance
-- [ ] Task 14: Ground questions and corrections in that source when present
+- SQLite or session persistence
+- LangChain, LangGraph, or autonomous agents
+- Multiple providers or automatic provider routing
+- Uploaded sources, retrieval, embeddings, or a vector database
+- Hint ladders beyond the single proposed next move
+- Voice, notes, retention scheduling, or a knowledge graph
+- Accounts, sync, analytics, billing, or production distribution
+- Mastery percentages or unsupported claims of knowledge
 
-### Phase 5: Evidence Graph and Learning Frontier
+## Next Vertical Slices
 
-- [ ] Task 15: Derive concept and misconception evidence from preserved attempts
-- [ ] Task 16: Propose prerequisite and related-concept edges with provenance
-- [ ] Task 17: Add topic audits and next-question recommendations
-- [ ] Task 18: Test a small graph view only against concrete learning decisions
-
-### Checkpoint: Product Validation
-
-- [ ] Critical flows pass end-to-end tests
-- [ ] Delayed qualitative testing compares ThinkEdge with ordinary explanatory chat
-- [ ] Privacy, security, backup, and distribution reviews are complete
+1. **Local persistence:** SQLite migrations, immutable attempts, resumable sessions, backup, and export.
+2. **Packaged credential setup:** move from development `.env` loading to a signed app settings flow backed by macOS Keychain.
+3. **Adaptive help:** rephrase, smaller question, hint, partial example, direct explanation, and learner challenge.
+4. **Retention:** revisit queue and delayed retrieval based on evidence.
+5. **Grounded sources:** pasted text and documents with passage provenance.
+6. **Evidence graph:** concepts, prerequisites, misconceptions, and relationships backed by attempts.
+7. **Optional orchestration:** LangGraph only if long-running, resumable workflows outgrow the application state machine.
+8. **Optional cloud:** accounts, encrypted sync, managed provider usage, and PostgreSQL after local product validation.
 
 ## Risks and Mitigations
 
-| Risk                                           | Impact | Mitigation                                                                                           |
-| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| AI creates a false sense of mastery            | High   | Require multiple retrieval or application attempts and show evidence instead of a mastery percentage |
-| Questioning becomes frustrating or aimless     | High   | Use explicit next-move rules, a graduated help ladder, and learner-controlled session exit           |
-| Evaluation is confidently wrong                | High   | Ground judgments in answer excerpts or sources, expose uncertainty, and support learner challenge    |
-| Model becomes an answer-dump chatbot           | High   | Enforce one-question contracts and gate direct explanation behind an explicit request                |
-| Knowledge graph becomes decorative             | Medium | Delay it until longitudinal evidence exists and test it against next-step decisions                  |
-| Local data loss                                | High   | Version migrations, transactional writes, backups, export, and interruption tests                    |
-| Electron boundary exposes desktop capabilities | High   | Sandboxed renderer, context isolation, narrow preload methods, and sender validation                 |
-| Scope expands into a general study suite       | Medium | Preserve the Not Doing list and ship only the next learning loop                                     |
+| Risk                                          | Impact | Mitigation                                                                                                |
+| --------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
+| Model confidently misjudges an answer         | High   | Explicit uncertainty, exact evidence excerpts, challenge workflow next, and evaluation fixtures           |
+| Model becomes a lecturer                      | High   | Strict output schema, concise field limits, forbidden-answer tests, and deterministic one-question pacing |
+| Provider output changes unexpectedly          | High   | Runtime validation, versioned prompts, captured test fixtures, and fail-closed behavior                   |
+| Key leaks into renderer or logs               | High   | Main-process-only provider service, secure storage, redaction, and narrow IPC                             |
+| Retries create duplicate turns or charges     | Medium | Request IDs, pending-state guards, idempotent UI behavior, and explicit retry                             |
+| Provider choice becomes architectural lock-in | Medium | Small internal provider interface without a full orchestration framework                                  |
+| Infrastructure hides weak pedagogy            | High   | Founder evaluation set and a decision gate before persistence or broader integrations                     |
 
-## Open Questions
+## Exit Decision
 
-- Resolve product-spec questions before the affected phase begins.
-- Decide distribution and signing before external alpha testing.
-- Build a small founder-authored evaluation set before choosing the first model.
+After the first real AI session, choose:
+
+1. **Continue to persistence** if feedback reliably identifies evidence and useful gaps.
+2. **Revise prompts/contracts** if the interaction is promising but inconsistent.
+3. **Reconsider the product mechanism** if AI cannot evaluate the selected domain without frequent confident errors or lectures.

@@ -2,7 +2,9 @@
 
 ThinkEdge is an early-stage, local-first desktop learning partner that finds the edge of a learner's understanding through adaptive Socratic questions. It asks one question at a time, evaluates the learner's own answer, and offers only the smallest useful amount of help.
 
-The repository currently contains only the desktop foundation. Product features are deliberately unimplemented.
+The current branch contains the first provider-backed learning loop: topic entry,
+an AI diagnostic question, a learner answer, evidence-based AI feedback, and one
+adaptive next question. Sessions are intentionally in memory for this slice.
 
 ## Requirements
 
@@ -11,6 +13,22 @@ The repository currently contains only the desktop foundation. Product features 
 - npm 11 or newer
 
 ## Development
+
+Create your local environment file and add your DeepSeek API key:
+
+```bash
+cp .env.example .env
+```
+
+```dotenv
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-v4-flash
+```
+
+`.env` and `.env.*` are ignored by Git. Only `.env.example`, which contains no
+secret, is committed. Restart ThinkEdge after changing the key.
+
+Then install and start the application:
 
 ```bash
 npm install
@@ -46,7 +64,9 @@ Unsigned development builds are intended only for local use. Code signing and no
 
 ## Current boundaries
 
-- No AI integration or learning sessions
+- DeepSeek V4 Flash is the only provider and runs in non-thinking mode for the
+  first fast, cost-conscious iteration
+- Sessions are in memory and disappear when the app restarts
 - No persistence or knowledge graph
 - No accounts, cloud backend, or synchronization
-- No secrets or environment files committed
+- Local secrets remain ignored and are never exposed to the renderer

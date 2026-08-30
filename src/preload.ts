@@ -1,3 +1,13 @@
-// Intentionally empty. Product capabilities will be exposed here as narrow,
-// typed methods only when an approved vertical slice requires them.
-export {};
+import { contextBridge, ipcRenderer } from 'electron';
+
+import type { ThinkEdgeApi } from './learning/ipc.ts';
+
+const thinkEdgeApi: ThinkEdgeApi = {
+  getProviderStatus: () => ipcRenderer.invoke('learning:provider-status'),
+  createDiagnosticQuestion: (request) =>
+    ipcRenderer.invoke('learning:create-diagnostic-question', request),
+  evaluateAttempt: (request) =>
+    ipcRenderer.invoke('learning:evaluate-attempt', request),
+};
+
+contextBridge.exposeInMainWorld('thinkEdge', thinkEdgeApi);
