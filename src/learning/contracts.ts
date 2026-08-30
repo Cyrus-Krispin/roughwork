@@ -9,12 +9,7 @@ const diagnosticQuestionSchema = z
 
 const evaluationSchema = z
   .object({
-    status: z.enum([
-      'demonstrated',
-      'partial',
-      'misconception',
-      'uncertain',
-    ]),
+    status: z.enum(['demonstrated', 'partial', 'misconception', 'uncertain']),
     evidence: z
       .array(
         z
@@ -28,12 +23,7 @@ const evaluationSchema = z
       .max(3),
     unresolvedGap: z.string().trim().min(5).max(320),
     uncertainty: z.enum(['low', 'medium', 'high']),
-    proposedNextMove: z.enum([
-      'probe',
-      'advance',
-      'prerequisite',
-      'hint',
-    ]),
+    proposedNextMove: z.enum(['probe', 'advance', 'prerequisite', 'hint']),
     nextQuestion: z.string().trim().min(10).max(320),
     nextQuestionRationale: z.string().trim().min(5).max(280),
   })
