@@ -1,14 +1,12 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import {
-  AppBar,
-  Box,
-  Button,
-  LinearProgress,
-  Paper,
-  Stack,
-  Toolbar,
-  Typography,
-} from '@mui/material';
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 import { FeedbackView } from './components/FeedbackView';
