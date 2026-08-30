@@ -1,4 +1,15 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
+import {
+  AppBar,
+  Box,
+  Button,
+  LinearProgress,
+  Paper,
+  Stack,
+  Toolbar,
+  Typography,
+} from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 import { FeedbackView } from './components/FeedbackView';
 import { QuestionView } from './components/QuestionView';
@@ -12,6 +23,24 @@ type ProviderState = {
   loading: boolean;
   configured: boolean;
   model: string;
+};
+
+const centeredStateSx: SxProps<Theme> = {
+  minHeight: { xs: 'calc(100vh - 4.5rem)', sm: 'calc(100vh - 5.5rem)' },
+  px: { xs: 2.5, sm: 6 },
+  py: 6,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+};
+
+const displayHeadingSx: SxProps<Theme> = {
+  maxWidth: '14ch',
+  mt: 3,
+  fontSize: { xs: '3rem', sm: 'clamp(3rem, 6vw, 5.5rem)' },
+  lineHeight: 0.98,
 };
 
 export function App() {
@@ -115,60 +144,152 @@ export function App() {
   const sessionIsActive = !['idle', 'ended'].includes(session.status);
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <button
-          className="wordmark"
-          type="button"
-          onClick={() => dispatch({ type: 'restart' })}
-          aria-label="Return to ThinkEdge home"
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.paper' }}>
+      <AppBar
+        component="header"
+        position="static"
+        color="transparent"
+        elevation={0}
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Toolbar
+          sx={{
+            minHeight: { xs: '4.5rem', sm: '5.5rem' },
+            px: { xs: 2, sm: 6 },
+            justifyContent: 'space-between',
+          }}
         >
-          ThinkEdge<span aria-hidden="true">.</span>
-        </button>
-        <div className="header-meta">
-          <span className="model-status">
-            <span
-              className={`status-dot ${provider.configured ? 'is-ready' : ''}`}
-              aria-hidden="true"
-            />
-            {provider.model}
-          </span>
-          {sessionIsActive && (
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => dispatch({ type: 'end' })}
+          <Button
+            variant="text"
+            color="inherit"
+            type="button"
+            onClick={() => dispatch({ type: 'restart' })}
+            aria-label="Return to ThinkEdge home"
+            sx={{
+              minWidth: 0,
+              p: 0,
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              letterSpacing: '-0.035em',
+            }}
+          >
+            ThinkEdge
+            <Box component="span" color="secondary.main" aria-hidden="true">
+              .
+            </Box>
+          </Button>
+          <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+                display: { xs: 'none', sm: 'flex' },
+                color: 'text.secondary',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                fontSize: '0.72rem',
+                letterSpacing: '0.02em',
+              }}
             >
-              End session
-            </button>
-          )}
-        </div>
-      </header>
+              <Box
+                component="span"
+                aria-hidden="true"
+                sx={{
+                  width: '0.45rem',
+                  height: '0.45rem',
+                  border: 1,
+                  borderColor: provider.configured
+                    ? 'primary.main'
+                    : 'text.secondary',
+                  borderRadius: '50%',
+                  bgcolor: provider.configured ? 'primary.main' : 'transparent',
+                }}
+              />
+              <Box component="span">{provider.model}</Box>
+            </Stack>
+            {sessionIsActive && (
+              <Button
+                variant="text"
+                color="inherit"
+                type="button"
+                onClick={() => dispatch({ type: 'end' })}
+                sx={{ minWidth: 0, p: 0.5, fontSize: '0.8rem' }}
+              >
+                End session
+              </Button>
+            )}
+          </Stack>
+        </Toolbar>
+      </AppBar>
 
       {provider.loading && (
-        <main className="centered-state" aria-busy="true">
-          <p className="kicker">ThinkEdge</p>
-          <h1>Preparing your thinking space…</h1>
-        </main>
+        <Box component="main" sx={centeredStateSx} aria-busy="true">
+          <Typography
+            variant="overline"
+            color="primary.main"
+            sx={{ fontWeight: 750 }}
+          >
+            ThinkEdge
+          </Typography>
+          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+            Preparing your thinking space…
+          </Typography>
+        </Box>
       )}
 
       {!provider.loading && !provider.configured && (
-        <main className="setup-view">
-          <p className="kicker">One local step</p>
-          <h1>Connect DeepSeek to begin.</h1>
-          <p className="setup-copy">
-            Open the local <code>.env</code> file, paste your key after{' '}
-            <code>DEEPSEEK_API_KEY=</code>, then restart ThinkEdge.
-          </p>
-          <div className="setup-code" aria-label="Environment configuration">
-            <span>DEEPSEEK_API_KEY=</span>
-            <span>DEEPSEEK_MODEL=deepseek-v4-flash</span>
-          </div>
-          <p className="privacy-note">
+        <Box component="main" sx={centeredStateSx}>
+          <Typography
+            variant="overline"
+            color="primary.main"
+            sx={{ fontWeight: 750 }}
+          >
+            One local step
+          </Typography>
+          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+            Connect DeepSeek to begin.
+          </Typography>
+          <Typography
+            color="text.secondary"
+            sx={{ maxWidth: '38rem', mt: 4, lineHeight: 1.7 }}
+          >
+            Open the local <Box component="code">.env</Box> file, paste your key
+            after <Box component="code">DEEPSEEK_API_KEY=</Box>, then restart
+            ThinkEdge.
+          </Typography>
+          <Paper
+            variant="outlined"
+            aria-label="Environment configuration"
+            sx={{
+              width: 'min(36rem, 100%)',
+              mt: 3,
+              p: 2.5,
+              bgcolor: 'text.primary',
+              color: '#e9eedf',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '0.82rem',
+              textAlign: 'left',
+            }}
+          >
+            <Stack spacing={0.75}>
+              <Box component="span">DEEPSEEK_API_KEY=</Box>
+              <Box component="span">DEEPSEEK_MODEL=deepseek-v4-flash</Box>
+            </Stack>
+          </Paper>
+          <Typography
+            color="text.secondary"
+            sx={{
+              maxWidth: '38rem',
+              mt: 2.5,
+              fontSize: '0.78rem',
+              lineHeight: 1.7,
+            }}
+          >
             The file is ignored by Git. Your key stays in the Electron main
             process and is never sent to the interface.
-          </p>
-        </main>
+          </Typography>
+        </Box>
       )}
 
       {!provider.loading &&
@@ -176,26 +297,56 @@ export function App() {
         session.status === 'idle' && <StartView onStart={startSession} />}
 
       {session.status === 'loading_question' && (
-        <main className="centered-state" aria-live="polite" aria-busy="true">
-          <p className="kicker">{session.topic}</p>
-          <h1>Finding the first useful question…</h1>
-          <div className="thinking-line" aria-hidden="true" />
-        </main>
+        <Box
+          component="main"
+          sx={centeredStateSx}
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <Typography
+            variant="overline"
+            color="primary.main"
+            sx={{ fontWeight: 750 }}
+          >
+            {session.topic}
+          </Typography>
+          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+            Finding the first useful question…
+          </Typography>
+          <LinearProgress
+            aria-hidden="true"
+            sx={{ width: 'min(20rem, 70vw)', mt: 6 }}
+          />
+        </Box>
       )}
 
       {session.status === 'error' && !session.currentQuestion && (
-        <main className="centered-state request-error" role="alert">
-          <p className="kicker">DeepSeek could not respond</p>
-          <h1>The first question is still waiting.</h1>
-          <p>{session.errorMessage}</p>
-          <button
-            className="primary-button"
+        <Box component="main" sx={centeredStateSx} role="alert">
+          <Typography
+            variant="overline"
+            color="error.main"
+            sx={{ fontWeight: 750 }}
+          >
+            DeepSeek could not respond
+          </Typography>
+          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+            The first question is still waiting.
+          </Typography>
+          <Typography
+            color="text.secondary"
+            sx={{ maxWidth: '38rem', mt: 3, lineHeight: 1.7 }}
+          >
+            {session.errorMessage}
+          </Typography>
+          <Button
+            variant="contained"
             type="button"
             onClick={retryRequest}
+            sx={{ mt: 3 }}
           >
             Try again
-          </button>
-        </main>
+          </Button>
+        </Box>
       )}
 
       {(['answering', 'evaluating'].includes(session.status) ||
@@ -229,23 +380,36 @@ export function App() {
       )}
 
       {session.status === 'ended' && (
-        <main className="ended-view">
-          <p className="kicker">Session complete</p>
-          <h1>You found an edge worth returning to.</h1>
-          <p>
+        <Box component="main" sx={centeredStateSx}>
+          <Typography
+            variant="overline"
+            color="primary.main"
+            sx={{ fontWeight: 750 }}
+          >
+            Session complete
+          </Typography>
+          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+            You found an edge worth returning to.
+          </Typography>
+          <Typography
+            color="text.secondary"
+            sx={{ maxWidth: '38rem', my: 4, lineHeight: 1.7 }}
+          >
             {session.turn} {session.turn === 1 ? 'question' : 'questions'} on{' '}
-            <strong>{session.topic}</strong>. Session history arrives in the
-            next persistence slice.
-          </p>
-          <button
-            className="primary-button"
+            <Box component="strong" color="text.primary">
+              {session.topic}
+            </Box>
+            . Session history arrives in the next persistence slice.
+          </Typography>
+          <Button
+            variant="contained"
             type="button"
             onClick={() => dispatch({ type: 'restart' })}
           >
             Start another topic
-          </button>
-        </main>
+          </Button>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
