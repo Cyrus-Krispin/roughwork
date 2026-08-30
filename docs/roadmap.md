@@ -1,6 +1,6 @@
-# Roughwork Roadmap
+# ThinkEdge Roadmap
 
-This roadmap orders learning-risk before breadth. Each phase should be reviewed before starting the next.
+This roadmap orders learning risk before breadth. Each phase should be reviewed before starting the next.
 
 ## Phase 0: Baseline
 
@@ -11,67 +11,69 @@ Outcome: a maintainable, packageable Mac desktop shell with no product functiona
 - Linting, formatting, type checking, and smoke tests
 - Product specification, architecture record, and task plan
 
-## Phase 1: Capture
+## Phase 1: Deterministic Session Shell
 
-Outcome: the learner can create, edit, reopen, and export one durable local note.
+Outcome: the learner can start, complete, reopen, and delete a local mock learning session without an AI provider.
 
-- Plain-text editor first
-- Explicit save state and autosave recovery
-- SQLite persistence with migrations and backups
-- Markdown import and export
+- Topic entry and one-question-at-a-time interface
+- Text answer capture and immutable attempt history
+- Deterministic mock evaluations and next moves
+- SQLite persistence with migrations and backup/export strategy
 
-Decision gate: confirm that writing feels immediate and that local persistence is trustworthy before introducing AI.
+Decision gate: confirm that the question-answer-feedback rhythm feels focused and that persistence is trustworthy.
 
-## Phase 2: Review
+## Phase 2: Constrained AI Evaluation
 
-Outcome: the learner can request a bounded review that critiques without rewriting.
+Outcome: real model output can evaluate an answer without becoming a lecturer.
 
-- Provider credential storage
-- Structured review contract and validation
-- Passage-level clarity and misconception feedback
-- Review history attached to the note
-- Offline and provider-error behavior
+- Provider credential storage in the main process
+- Structured evaluation and next-question contract
+- Runtime validation and explicit uncertainty
+- Evaluation fixtures across strong, partial, mistaken, and ambiguous answers
+- Provider failure, retry, and offline behavior
 
-Decision gate: compare review output against the product principle of questions before answers.
+Decision gate: verify that evaluations cite the learner's answer, remain brief, and expose useful gaps reliably enough for a small founder test set.
 
-## Phase 3: Retrieval
+## Phase 3: Adaptive Questioning
 
-Outcome: Roughwork tests understanding rather than merely describing the note.
+Outcome: ThinkEdge keeps a learner at the edge of understanding across a complete session.
 
-- Three to five generated questions per requested review
-- Learner answer capture without immediate answer reveal
-- Evidence-based evaluation
-- Revisit queue for weak concepts
+- Probe, advance, prerequisite, and hint transitions
+- Graduated help ladder
+- Learner challenge and correction of evaluations
+- Session-ending evidence and unresolved-gap summary
 
-Decision gate: measure whether questions reveal gaps the learner did not notice.
+Decision gate: compare the adaptive loop with an ordinary explanatory chat and test whether it reveals more specific gaps without causing unproductive frustration.
 
-## Phase 4: Connections
+## Phase 4: Retention and Sources
 
-Outcome: approved concepts from multiple notes form a useful understanding map.
+Outcome: learners can return at useful intervals and optionally ground a session in material they chose.
 
-- Concept and relationship proposals
-- Learner approval workflow
-- Small, navigable graph view
-- Evidence states such as mentioned, explained, retrieved, and applied
+- Revisit queue based on prior answer evidence
+- Lightweight retrieval scheduling
+- Optional pasted text or document source
+- Source-linked questions, corrections, and uncertainty
 
-Decision gate: verify that the graph improves next-step decisions rather than becoming decorative organization.
+Decision gate: test whether revisits improve delayed recall and whether sources increase factual trust without turning the product into a reading or note-management app.
 
-## Phase 5: Learning Frontier
+## Phase 5: Evidence Graph and Learning Frontier
 
-Outcome: Roughwork recommends a few next questions at the edge of demonstrated understanding.
+Outcome: longitudinal attempts form a useful model of demonstrated knowledge and reachable next topics.
 
-- Gap detection with explicit uncertainty
-- Learner-controlled scope boundaries
-- Topic audits and longitudinal progress
-- Optional general questioning mode
+- Concepts, prerequisites, misconceptions, and evidence provenance
+- Learner-visible topic audit and history
+- Suggested next questions at the learning frontier
+- Small graph view only if it improves a real learning decision
+
+Decision gate: retain the graph only if learners use it to choose what to revisit or learn next.
 
 ## Deferred Until Validation
 
+- Voice answers and transcription
 - Accounts and synchronization
-- Collaboration
+- Collaboration or public sharing
 - Mobile applications
 - Multiple model providers
-- Audio transcription
 - Browser extensions and automatic source capture
-- Public sharing and publishing
+- Rich note editing or knowledge-base features
 - Marketplace or plugin architecture

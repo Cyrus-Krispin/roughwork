@@ -1,6 +1,6 @@
-# Roughwork
+# ThinkEdge
 
-Roughwork is an early-stage, local-first learning workspace. Its goal is to help learners turn incomplete ideas into durable understanding without letting AI do the thinking for them.
+ThinkEdge is an early-stage, local-first desktop learning partner that finds the edge of a learner's understanding through adaptive Socratic questions. It asks one question at a time, evaluates the learner's own answer, and offers only the smallest useful amount of help.
 
 The repository currently contains only the desktop foundation. Product features are deliberately unimplemented.
 
@@ -37,6 +37,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 
 ## Documentation
 
+- [Product direction](docs/product-direction.md)
 - [Product specification](docs/product-spec.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
@@ -45,8 +46,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 
 ## Current boundaries
 
-- No AI integration
-- No note editor or persistence
-- No knowledge graph
+- No AI integration or learning sessions
+- No persistence or knowledge graph
 - No accounts, cloud backend, or synchronization
 - No secrets or environment files committed

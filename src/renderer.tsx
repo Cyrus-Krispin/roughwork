@@ -7,7 +7,7 @@ import './index.css';
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Roughwork could not find its root element.');
+  throw new Error('ThinkEdge could not find its root element.');
 }
 
 createRoot(rootElement).render(

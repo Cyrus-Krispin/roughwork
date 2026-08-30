@@ -1,8 +1,8 @@
 {
-  "name": "roughwork",
-  "productName": "Roughwork",
+  "name": "think-edge",
+  "productName": "ThinkEdge",
   "version": "0.0.0",
-  "description": "A learning workspace that does not confuse exposure with understanding.",
+  "description": "An adaptive Socratic learning partner that finds the edge of your understanding.",
   "main": ".webpack/main",
   "private": true,
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "keywords": [
     "learning",
-    "notes",
+    "socratic",
     "electron"
   ],
   "author": "Cyrus",

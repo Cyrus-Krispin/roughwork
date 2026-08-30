@@ -9,5 +9,6 @@ test('the baseline remains private and points to the Forge bundle', async () => 
 
   assert.equal(packageJson.private, true);
   assert.equal(packageJson.main, '.webpack/main');
-  assert.equal(packageJson.productName, 'Roughwork');
+  assert.equal(packageJson.name, 'think-edge');
+  assert.equal(packageJson.productName, 'ThinkEdge');
 });

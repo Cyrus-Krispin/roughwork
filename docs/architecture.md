@@ -1,17 +1,19 @@
-# Roughwork Architecture
+# ThinkEdge Architecture
 
 Status: Planned architecture; only the baseline shell is implemented initially.
 
 ## Decision Summary
 
-Roughwork starts as a local-first Electron desktop application with a React and TypeScript interface. Electron's main process owns privileged operations. The renderer remains a sandboxed web environment and communicates through a narrow preload bridge.
+ThinkEdge starts as a local-first Electron desktop application with a React and TypeScript interface. Electron's main process owns privileged operations and outbound model requests. The renderer remains sandboxed and communicates through a narrow preload bridge.
+
+The first AI integration should call a model provider directly and validate structured output. An orchestration framework and graph database are unnecessary until demonstrated complexity requires them.
 
 ```text
 React renderer
-  note workspace
-  review surface
-  questions
-  understanding map
+  topic and session setup
+  one active question
+  answer and feedback
+  session evidence
         |
         | typed, task-specific commands
         v
@@ -19,9 +21,9 @@ Preload bridge
         |
         v
 Electron main process
+  session state machine
   local persistence
-  model requests
-  import/export
+  model requests and validation
   secure settings
 ```
 
@@ -42,50 +44,51 @@ No inter-process API is exposed until a product slice needs one.
 
 - application lifecycle and native window management;
 - local database ownership and migrations;
-- filesystem import and export;
+- deterministic session transition rules;
 - secure storage of provider credentials;
-- outbound model requests;
+- outbound model requests and runtime response validation;
 - validation of every renderer request.
 
 ### Preload bridge
 
 - expose only named, typed operations required by the renderer;
 - hide raw Electron IPC, filesystem, database, and shell capabilities;
-- contain no product or persistence logic.
+- contain no product, model, or persistence logic.
 
 ### Renderer
 
-- capture learner input;
-- display note, review, question, and graph states;
-- maintain temporary presentation state;
-- never access secrets, the filesystem, or a database directly.
+- start and resume learning sessions;
+- display exactly one active question;
+- capture learner answers and help requests;
+- show concise feedback, uncertainty, evidence, and session summaries;
+- never access secrets, the filesystem, a database, or a model provider directly.
 
 ## Planned Data Model
 
 The likely SQLite entities are:
 
-- `notes`: learner-authored documents and timestamps;
-- `concepts`: normalized concepts proposed or approved by the learner;
-- `note_concepts`: evidence connecting notes to concepts;
-- `concept_edges`: approved relationships between concepts;
-- `reviews`: immutable records of requested AI reviews;
-- `questions`: questions generated from a review;
-- `attempts`: learner answers and evaluation evidence.
+- `topics`: learner-named subject scopes;
+- `sessions`: bounded learning interactions and their status;
+- `sources`: optional learner-supplied material and provenance;
+- `questions`: prompts, intent, difficulty, and parent relationship;
+- `attempts`: immutable learner answers and timestamps;
+- `evaluations`: validated judgments, reasons, uncertainty, and next moves;
+- `concepts`: normalized concepts inferred from accumulated evidence;
+- `concept_evidence`: links between concepts and exact attempts or evaluations;
+- `concept_edges`: proposed relationships with provenance and learner status.
 
-This is a hypothesis, not an approved schema. The first persistence slice should validate it against the note workflow before migrations are committed.
+This is a hypothesis, not an approved schema. Phase 1 should begin with only the fields required by the deterministic session loop. Concept and edge tables wait until longitudinal evidence exists.
 
-## Planned Review Contract
+## Planned Model Contract
 
-Model responses should be structured and validated before storage or display. A review may propose:
+Each model operation should have one narrow purpose and return structured, validated data. The first combined turn may propose:
 
-- unclear passages;
-- possible misconceptions;
-- concepts supported by quoted evidence;
-- questions that test understanding;
-- possible relationships to existing concepts;
-- a small number of next learning questions.
+- an evaluation status and concise reason grounded in the learner's answer;
+- concept evidence and an explicit uncertainty level;
+- exactly one next move;
+- at most one next question or one graduated-help response.
 
-The model cannot directly modify learner text or approve concepts and links.
+The model cannot alter the learner's answer, mark a topic mastered, or write graph relationships without provenance. Deterministic application rules enforce the help ladder and session state even when model output disagrees.
 
 ## Security Defaults
 
@@ -95,11 +98,11 @@ The model cannot directly modify learner text or approve concepts and links.
 - Only packaged local content is executed.
 - Navigation and new-window behavior are denied unless explicitly allowed.
 - Provider credentials never cross into the renderer.
-- User content is sent externally only during an explicit review action.
+- Learner content is sent externally only during an explicit learner-started model action.
 
 ## Dependency Policy
 
-Add dependencies only when a planned vertical slice requires them. Expected candidates include a rich-text editor, SQLite access, schema validation, and a graph renderer, but none belongs in the baseline merely because it may be useful later.
+Add dependencies only when a planned vertical slice requires them. Expected candidates include SQLite access and runtime schema validation. Voice transcription and graph rendering are deferred. The baseline does not need an AI orchestration library.
 
 ## Architecture References
 
