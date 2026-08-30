@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -12,6 +13,7 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { FeedbackView } from './components/FeedbackView';
 import { QuestionView } from './components/QuestionView';
 import { StartView } from './components/StartView';
+import { ThinkEdgeMark } from './components/ThinkEdgeMark';
 import {
   initialLearningSession,
   learningSessionReducer,
@@ -23,7 +25,7 @@ type ProviderState = {
 };
 
 const centeredStateSx: SxProps<Theme> = {
-  minHeight: { xs: 'calc(100vh - 4.5rem)', sm: 'calc(100vh - 5.5rem)' },
+  minHeight: 'calc(100vh - 4rem)',
   px: { xs: 2.5, sm: 6 },
   py: 6,
   display: 'flex',
@@ -35,9 +37,8 @@ const centeredStateSx: SxProps<Theme> = {
 
 const displayHeadingSx: SxProps<Theme> = {
   maxWidth: '14ch',
-  mt: 3,
-  fontSize: { xs: '3rem', sm: 'clamp(3rem, 6vw, 5.5rem)' },
-  lineHeight: 0.98,
+  fontSize: { xs: '2.5rem', sm: 'clamp(2.75rem, 5vw, 4.5rem)' },
+  lineHeight: 1,
 };
 
 export function App() {
@@ -141,41 +142,29 @@ export function App() {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.paper' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar
         component="header"
         position="static"
         color="transparent"
         elevation={0}
-        sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
         <Toolbar
           sx={{
-            minHeight: '4.5rem',
-            px: { xs: 2, sm: 4 },
+            minHeight: '4rem',
+            px: { xs: 2, sm: 3 },
             justifyContent: 'space-between',
           }}
         >
-          <Button
-            variant="text"
+          <IconButton
             color="inherit"
-            type="button"
             onClick={() => dispatch({ type: 'restart' })}
             aria-label="Return to ThinkEdge home"
-            sx={{
-              minWidth: 0,
-              p: 0,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '1.35rem',
-              fontWeight: 700,
-              letterSpacing: '-0.035em',
-            }}
+            size="small"
+            sx={{ p: 0.75 }}
           >
-            ThinkEdge
-            <Box component="span" color="secondary.main" aria-hidden="true">
-              .
-            </Box>
-          </Button>
+            <ThinkEdgeMark />
+          </IconButton>
           {sessionIsActive && (
             <Button
               variant="text"

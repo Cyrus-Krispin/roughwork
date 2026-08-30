@@ -37,7 +37,7 @@ export function FeedbackView({
     <Box
       component="main"
       sx={{
-        minHeight: 'calc(100vh - 4.5rem)',
+        minHeight: 'calc(100vh - 4rem)',
         px: { xs: 2.5, sm: 6 },
         py: { xs: 5, sm: 8 },
       }}
@@ -52,9 +52,7 @@ export function FeedbackView({
       >
         <Box
           sx={{
-            pb: 3,
-            borderBottom: 1,
-            borderColor: 'divider',
+            pb: 2,
           }}
         >
           <Typography
@@ -79,8 +77,6 @@ export function FeedbackView({
           elevation={0}
           sx={{
             bgcolor: 'transparent',
-            borderBottom: 1,
-            borderColor: 'divider',
             '&::before': { display: 'none' },
           }}
         >
@@ -99,7 +95,6 @@ export function FeedbackView({
               sx={{
                 maxWidth: '48rem',
                 color: 'text.primary',
-                fontFamily: 'Georgia, "Times New Roman", serif',
                 fontSize: '1.25rem',
                 lineHeight: 1.6,
               }}
@@ -122,8 +117,7 @@ export function FeedbackView({
               xs: '1fr',
               md: 'minmax(0, 1.25fr) minmax(15rem, 0.75fr)',
             },
-            borderBottom: 1,
-            borderColor: 'divider',
+            columnGap: { md: 6 },
           }}
         >
           <Box
@@ -131,10 +125,6 @@ export function FeedbackView({
             aria-labelledby="evidence-heading"
             sx={{
               py: 5,
-              pr: { md: 6 },
-              borderRight: { md: 1 },
-              borderBottom: { xs: 1, md: 0 },
-              borderColor: 'divider',
             }}
           >
             <Typography
@@ -160,7 +150,6 @@ export function FeedbackView({
                 >
                   <Typography
                     sx={{
-                      fontFamily: 'Georgia, "Times New Roman", serif',
                       fontSize: '1.08rem',
                       lineHeight: 1.5,
                     }}
@@ -181,7 +170,7 @@ export function FeedbackView({
           <Box
             component="section"
             aria-labelledby="edge-heading"
-            sx={{ py: 5, pl: { md: 6 } }}
+            sx={{ py: 5 }}
           >
             <Typography
               variant="overline"

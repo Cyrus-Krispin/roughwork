@@ -39,7 +39,7 @@ export function QuestionView({
     <Box
       component="main"
       sx={{
-        minHeight: 'calc(100vh - 4.5rem)',
+        minHeight: 'calc(100vh - 4rem)',
         px: { xs: 2.5, sm: 6 },
         py: { xs: 5, sm: 8 },
       }}
@@ -88,8 +88,6 @@ export function QuestionView({
             slotProps={{
               input: {
                 sx: {
-                  bgcolor: '#fffdf7',
-                  fontFamily: 'Georgia, "Times New Roman", serif',
                   fontSize: '1.18rem',
                   lineHeight: 1.65,
                 },

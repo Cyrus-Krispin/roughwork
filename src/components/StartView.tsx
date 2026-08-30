@@ -23,7 +23,7 @@ export function StartView({ onStart }: StartViewProps) {
       component="main"
       sx={{
         display: 'flex',
-        minHeight: { xs: 'calc(100vh - 4.5rem)', sm: 'calc(100vh - 5.5rem)' },
+        minHeight: 'calc(100vh - 4rem)',
         alignItems: 'center',
         justifyContent: 'center',
         px: { xs: 2.5, sm: 6 },
@@ -59,8 +59,8 @@ export function StartView({ onStart }: StartViewProps) {
             slotProps={{
               input: {
                 sx: {
-                  fontFamily: 'Georgia, "Times New Roman", serif',
                   fontSize: { xs: '1.5rem', sm: '2rem' },
+                  fontWeight: 400,
                   lineHeight: 1.4,
                   pb: 1.5,
                 },
@@ -72,17 +72,14 @@ export function StartView({ onStart }: StartViewProps) {
         <Box
           aria-label="Suggested topics"
           sx={{
-            mt: { xs: 5, sm: 7 },
-            pt: 3,
-            borderTop: 1,
-            borderColor: 'divider',
+            mt: { xs: 4, sm: 5 },
           }}
         >
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {suggestions.map((suggestion) => (
               <Button
                 key={suggestion}
-                variant="outlined"
+                variant="text"
                 color="inherit"
                 type="button"
                 onClick={() => void onStart(suggestion)}

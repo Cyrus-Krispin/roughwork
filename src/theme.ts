@@ -4,46 +4,44 @@ export const thinkEdgeTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#36513b',
-      contrastText: '#fffdf7',
+      main: '#242622',
+      contrastText: '#f7f6f1',
     },
     secondary: {
-      main: '#a7482f',
+      main: '#5f625c',
     },
     error: {
-      main: '#a7482f',
+      main: '#9a3f32',
     },
     background: {
-      default: '#f2eee4',
-      paper: '#f8f5ed',
+      default: '#f7f6f1',
+      paper: '#f7f6f1',
     },
     text: {
-      primary: '#20231d',
-      secondary: '#696b63',
+      primary: '#242622',
+      secondary: '#6f716b',
     },
-    divider: '#cbc6b9',
+    divider: '#deddd7',
   },
   shape: {
-    borderRadius: 0,
+    borderRadius: 8,
   },
   typography: {
     fontFamily:
       'Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     button: {
       fontSize: '0.82rem',
-      fontWeight: 700,
+      fontWeight: 600,
       letterSpacing: 0,
       textTransform: 'none',
     },
     h1: {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontWeight: 400,
-      letterSpacing: '-0.055em',
+      fontWeight: 500,
+      letterSpacing: '-0.045em',
     },
     h2: {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontWeight: 400,
-      letterSpacing: '-0.04em',
+      fontWeight: 500,
+      letterSpacing: '-0.035em',
     },
   },
   components: {
@@ -64,6 +62,13 @@ export const thinkEdgeTheme = createTheme({
     MuiButton: {
       defaultProps: {
         disableElevation: true,
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
       },
     },
   },
