@@ -4,7 +4,6 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -38,83 +37,42 @@ export function FeedbackView({
     <Box
       component="main"
       sx={{
-        display: { xs: 'block', sm: 'grid' },
-        minHeight: { xs: 'calc(100vh - 4.5rem)', sm: 'calc(100vh - 5.5rem)' },
-        gridTemplateColumns: {
-          sm: '4rem minmax(0, 1fr)',
-          md: '9rem minmax(0, 1fr)',
-        },
+        minHeight: 'calc(100vh - 4.5rem)',
+        px: { xs: 2.5, sm: 6 },
+        py: { xs: 5, sm: 8 },
       }}
     >
-      <Box
-        aria-label="Session progress"
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'row', sm: 'column' },
-          justifyContent: 'space-between',
-          p: { xs: 1.5, sm: 2.5, md: 3 },
-          borderRight: { sm: 1 },
-          borderBottom: { xs: 1, sm: 0 },
-          borderColor: 'divider',
-          color: 'text.secondary',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-          fontSize: '0.68rem',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          writingMode: { sm: 'vertical-rl' },
-        }}
-      >
-        <Box component="span">Review {String(turn).padStart(2, '0')}</Box>
-        <Box component="span">{topic}</Box>
-      </Box>
       <Box
         component="section"
         aria-labelledby="feedback-heading"
         sx={{
-          width: 'min(100%, 70rem)',
+          width: 'min(100%, 60rem)',
           mx: 'auto',
-          p: { xs: 2.5, sm: 4, md: 'clamp(3rem, 7vw, 6.5rem)' },
         }}
       >
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={3}
+        <Box
           sx={{
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            justifyContent: 'space-between',
-            pb: 4,
+            pb: 3,
             borderBottom: 1,
             borderColor: 'divider',
           }}
         >
-          <Box>
-            <Typography
-              variant="overline"
-              color="primary.main"
-              sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
-            >
-              What your answer shows
-            </Typography>
-            <Typography
-              id="feedback-heading"
-              component="h1"
-              variant="h1"
-              sx={{ mt: 1.5, fontSize: 'clamp(2.8rem, 5vw, 4.6rem)' }}
-            >
-              {statusLabels[evaluation.status]}
-            </Typography>
-          </Box>
-          <Chip
-            variant="outlined"
-            size="small"
-            label={`${evaluation.uncertainty} evaluation uncertainty`}
-            sx={{
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: '0.65rem',
-              textTransform: 'uppercase',
-            }}
-          />
-        </Stack>
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ fontWeight: 700 }}
+          >
+            {topic} · {String(turn).padStart(2, '0')}
+          </Typography>
+          <Typography
+            id="feedback-heading"
+            component="h1"
+            variant="h1"
+            sx={{ mt: 1.5, fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}
+          >
+            {statusLabels[evaluation.status]}
+          </Typography>
+        </Box>
 
         <Accordion
           disableGutters
@@ -133,7 +91,7 @@ export function FeedbackView({
             sx={{ px: 0 }}
           >
             <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>
-              Review the question and your answer
+              Your answer
             </Typography>
           </AccordionSummary>
           <AccordionDetails id="answer-reference-content" sx={{ px: 0, pb: 3 }}>
@@ -185,7 +143,7 @@ export function FeedbackView({
               variant="h2"
               sx={{ mb: 3, fontSize: '1.45rem' }}
             >
-              Evidence in your answer
+              Evidence
             </Typography>
             <Stack spacing={1.5}>
               {evaluation.evidence.map((evidence) => (
@@ -240,19 +198,6 @@ export function FeedbackView({
             >
               {evaluation.unresolvedGap}
             </Typography>
-            <Chip
-              variant="outlined"
-              color="primary"
-              size="small"
-              label={evaluation.proposedNextMove}
-              sx={{
-                height: 'auto',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                fontSize: '0.65rem',
-                textTransform: 'uppercase',
-                '& .MuiChip-label': { whiteSpace: 'normal', py: 0.75 },
-              }}
-            />
           </Box>
         </Box>
 
@@ -262,7 +207,7 @@ export function FeedbackView({
             color="primary.main"
             sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
           >
-            One step beyond
+            Next
           </Typography>
           <Typography
             id="next-heading"
@@ -278,19 +223,13 @@ export function FeedbackView({
           >
             {evaluation.nextQuestion}
           </Typography>
-          <Typography
-            color="text.secondary"
-            sx={{ maxWidth: '38rem', lineHeight: 1.6 }}
-          >
-            {evaluation.nextQuestionRationale}
-          </Typography>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={3}
             sx={{ mt: 4, alignItems: { xs: 'stretch', sm: 'center' } }}
           >
             <Button variant="contained" type="button" onClick={onContinue}>
-              Answer this question
+              Continue
               <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                 →
               </Box>
@@ -301,7 +240,7 @@ export function FeedbackView({
               type="button"
               onClick={onEnd}
             >
-              End here
+              End
             </Button>
           </Stack>
         </Box>

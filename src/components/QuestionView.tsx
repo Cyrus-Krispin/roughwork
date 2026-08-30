@@ -3,7 +3,6 @@ import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -41,64 +40,39 @@ export function QuestionView({
     <Box
       component="main"
       sx={{
-        display: { xs: 'block', sm: 'grid' },
-        minHeight: { xs: 'calc(100vh - 4.5rem)', sm: 'calc(100vh - 5.5rem)' },
-        gridTemplateColumns: {
-          sm: '4rem minmax(0, 1fr)',
-          md: '9rem minmax(0, 1fr)',
-        },
+        minHeight: 'calc(100vh - 4.5rem)',
+        px: { xs: 2.5, sm: 6 },
+        py: { xs: 5, sm: 8 },
       }}
     >
-      <Box
-        aria-label="Session progress"
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'row', sm: 'column' },
-          justifyContent: 'space-between',
-          p: { xs: 1.5, sm: 2.5, md: 3 },
-          borderRight: { sm: 1 },
-          borderBottom: { xs: 1, sm: 0 },
-          borderColor: 'divider',
-          color: 'text.secondary',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-          fontSize: '0.68rem',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          writingMode: { sm: 'vertical-rl' },
-        }}
-      >
-        <Box component="span">Question {String(turn).padStart(2, '0')}</Box>
-        <Box component="span">{topic}</Box>
-      </Box>
       <Box
         component="section"
         aria-labelledby="active-question"
         sx={{
-          width: 'min(100%, 70rem)',
+          width: 'min(100%, 56rem)',
           mx: 'auto',
-          p: { xs: 2.5, sm: 4, md: 'clamp(3rem, 7vw, 6.5rem)' },
         }}
       >
         <Typography
           variant="overline"
-          color="primary.main"
-          sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
+          color="text.secondary"
+          sx={{ fontWeight: 700 }}
         >
-          Think it through in your own words
+          {topic} · {String(turn).padStart(2, '0')}
         </Typography>
         <Typography
           id="active-question"
           component="h1"
           variant="h1"
           sx={{
-            maxWidth: '19ch',
-            mt: 3,
-            mb: { xs: 5, sm: 7 },
+            maxWidth: '22ch',
+            mt: 2,
+            mb: { xs: 5, sm: 6 },
             fontSize: {
-              xs: 'clamp(2.5rem, 13vw, 3.6rem)',
-              sm: 'clamp(2.8rem, 5.5vw, 5.2rem)',
+              xs: 'clamp(2.25rem, 10vw, 3.25rem)',
+              sm: 'clamp(2.5rem, 5vw, 4.25rem)',
             },
-            lineHeight: 1.03,
+            lineHeight: 1.08,
           }}
         >
           {question}
@@ -124,35 +98,21 @@ export function QuestionView({
               },
             }}
           />
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={3}
-            sx={{
-              mt: 2,
-              alignItems: { xs: 'stretch', sm: 'center' },
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              color="text.secondary"
-              sx={{ maxWidth: '28rem', fontSize: '0.75rem', lineHeight: 1.5 }}
-            >
-              ThinkEdge will evaluate only what this answer demonstrates.
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Button
               variant="contained"
               type="submit"
               disabled={busy || !answer.trim()}
-              sx={{ minHeight: '3.25rem', minWidth: { sm: '14rem' } }}
+              sx={{ minHeight: '3rem', width: { xs: '100%', sm: 'auto' } }}
             >
-              {busy ? 'Reading your reasoning…' : 'Review my answer'}
+              {busy ? 'Reviewing…' : 'Review answer'}
               {!busy && (
                 <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                   →
                 </Box>
               )}
             </Button>
-          </Stack>
+          </Box>
         </Box>
         {error && (
           <Alert

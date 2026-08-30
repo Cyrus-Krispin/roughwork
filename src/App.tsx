@@ -20,7 +20,6 @@ import {
 type ProviderState = {
   loading: boolean;
   configured: boolean;
-  model: string;
 };
 
 const centeredStateSx: SxProps<Theme> = {
@@ -45,7 +44,6 @@ export function App() {
   const [provider, setProvider] = useState<ProviderState>({
     loading: true,
     configured: false,
-    model: 'deepseek-v4-flash',
   });
   const [session, dispatch] = useReducer(
     learningSessionReducer,
@@ -65,7 +63,6 @@ export function App() {
           setProvider({
             loading: false,
             configured: false,
-            model: 'deepseek-v4-flash',
           });
         }
       });
@@ -152,8 +149,8 @@ export function App() {
       >
         <Toolbar
           sx={{
-            minHeight: { xs: '4.5rem', sm: '5.5rem' },
-            px: { xs: 2, sm: 6 },
+            minHeight: '4.5rem',
+            px: { xs: 2, sm: 4 },
             justifyContent: 'space-between',
           }}
         >
@@ -177,47 +174,22 @@ export function App() {
               .
             </Box>
           </Button>
-          <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
-            <Stack
-              direction="row"
-              spacing={1}
+          {sessionIsActive && (
+            <Button
+              variant="text"
+              color="inherit"
+              type="button"
+              onClick={() => dispatch({ type: 'end' })}
               sx={{
-                alignItems: 'center',
-                display: { xs: 'none', sm: 'flex' },
+                minWidth: 0,
+                p: 0.5,
                 color: 'text.secondary',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                fontSize: '0.72rem',
-                letterSpacing: '0.02em',
+                fontSize: '0.8rem',
               }}
             >
-              <Box
-                component="span"
-                aria-hidden="true"
-                sx={{
-                  width: '0.45rem',
-                  height: '0.45rem',
-                  border: 1,
-                  borderColor: provider.configured
-                    ? 'primary.main'
-                    : 'text.secondary',
-                  borderRadius: '50%',
-                  bgcolor: provider.configured ? 'primary.main' : 'transparent',
-                }}
-              />
-              <Box component="span">{provider.model}</Box>
-            </Stack>
-            {sessionIsActive && (
-              <Button
-                variant="text"
-                color="inherit"
-                type="button"
-                onClick={() => dispatch({ type: 'end' })}
-                sx={{ minWidth: 0, p: 0.5, fontSize: '0.8rem' }}
-              >
-                End session
-              </Button>
-            )}
-          </Stack>
+              End
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -231,7 +203,7 @@ export function App() {
             ThinkEdge
           </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Preparing your thinking space…
+            Getting ready…
           </Typography>
         </Box>
       )}
@@ -243,18 +215,16 @@ export function App() {
             color="primary.main"
             sx={{ fontWeight: 750 }}
           >
-            One local step
+            Setup
           </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Connect DeepSeek to begin.
+            Add your DeepSeek key.
           </Typography>
           <Typography
             color="text.secondary"
             sx={{ maxWidth: '38rem', mt: 4, lineHeight: 1.7 }}
           >
-            Open the local <Box component="code">.env</Box> file, paste your key
-            after <Box component="code">DEEPSEEK_API_KEY=</Box>, then restart
-            ThinkEdge.
+            Add the key to your local <Box component="code">.env</Box> file.
           </Typography>
           <Paper
             variant="outlined"
@@ -272,7 +242,6 @@ export function App() {
           >
             <Stack spacing={0.75}>
               <Box component="span">DEEPSEEK_API_KEY=</Box>
-              <Box component="span">DEEPSEEK_MODEL=deepseek-v4-flash</Box>
             </Stack>
           </Paper>
           <Typography
@@ -284,8 +253,7 @@ export function App() {
               lineHeight: 1.7,
             }}
           >
-            The file is ignored by Git. Your key stays in the Electron main
-            process and is never sent to the interface.
+            Restart ThinkEdge when you are done.
           </Typography>
         </Box>
       )}
@@ -309,7 +277,7 @@ export function App() {
             {session.topic}
           </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Finding the first useful question…
+            Thinking…
           </Typography>
           <LinearProgress
             aria-hidden="true"
@@ -325,10 +293,10 @@ export function App() {
             color="error.main"
             sx={{ fontWeight: 750 }}
           >
-            DeepSeek could not respond
+            Something went wrong
           </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            The first question is still waiting.
+            Couldn't get a question.
           </Typography>
           <Typography
             color="text.secondary"
@@ -384,27 +352,26 @@ export function App() {
             color="primary.main"
             sx={{ fontWeight: 750 }}
           >
-            Session complete
+            Done
           </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            You found an edge worth returning to.
+            Session complete.
           </Typography>
           <Typography
             color="text.secondary"
             sx={{ maxWidth: '38rem', my: 4, lineHeight: 1.7 }}
           >
-            {session.turn} {session.turn === 1 ? 'question' : 'questions'} on{' '}
+            {session.turn} {session.turn === 1 ? 'question' : 'questions'} ·{' '}
             <Box component="strong" color="text.primary">
               {session.topic}
             </Box>
-            . Session history arrives in the next persistence slice.
           </Typography>
           <Button
             variant="contained"
             type="button"
             onClick={() => dispatch({ type: 'restart' })}
           >
-            Start another topic
+            Start again
           </Button>
         </Box>
       )}
