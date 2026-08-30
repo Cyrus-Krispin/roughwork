@@ -1,8 +1,24 @@
 import { z } from 'zod';
 
+const shortQuestionSchema = z
+  .string()
+  .trim()
+  .min(5)
+  .max(140)
+  .refine((question) => question.split(/\s+/u).length <= 16, {
+    message: 'Question must contain at most 16 words.',
+  })
+  .refine(
+    (question) =>
+      !question.includes('\n') &&
+      question.endsWith('?') &&
+      question.match(/\?/gu)?.length === 1,
+    { message: 'Question must be one sentence with one question mark.' },
+  );
+
 const diagnosticQuestionSchema = z
   .object({
-    question: z.string().trim().min(10).max(280),
+    question: shortQuestionSchema,
     intent: z.string().trim().min(10).max(240),
   })
   .strict();
@@ -24,7 +40,7 @@ const evaluationSchema = z
     unresolvedGap: z.string().trim().min(5).max(320),
     uncertainty: z.enum(['low', 'medium', 'high']),
     proposedNextMove: z.enum(['probe', 'advance', 'prerequisite', 'hint']),
-    nextQuestion: z.string().trim().min(10).max(320),
+    nextQuestion: shortQuestionSchema,
     nextQuestionRationale: z.string().trim().min(5).max(280),
   })
   .strict();

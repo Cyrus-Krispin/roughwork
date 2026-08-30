@@ -42,6 +42,8 @@ test('requests a JSON diagnostic question from DeepSeek', async () => {
   });
   assert.equal(client.requests[0].model, 'deepseek-v4-flash');
   assert.deepEqual(client.requests[0].thinking, { type: 'disabled' });
+  assert.match(client.requests[0].messages[0].content, /at most 16 words/i);
+  assert.match(client.requests[0].messages[0].content, /one small step/i);
   assert.match(client.requests[0].messages[1].content, /Model training/);
 });
 
@@ -78,6 +80,8 @@ test('evaluates an attempt and proposes exactly one next question', async () => 
     type: 'json_object',
   });
   assert.deepEqual(client.requests[0].thinking, { type: 'disabled' });
+  assert.match(client.requests[0].messages[0].content, /at most 16 words/i);
+  assert.match(client.requests[0].messages[0].content, /smallest unresolved/i);
 });
 
 test('fails closed when DeepSeek returns empty content', async () => {

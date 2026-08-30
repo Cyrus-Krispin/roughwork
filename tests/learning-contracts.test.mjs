@@ -28,6 +28,30 @@ test('rejects an empty diagnostic response', () => {
   );
 });
 
+test('rejects a diagnostic question longer than 16 words', () => {
+  assert.throws(() =>
+    parseDiagnosticQuestion(
+      JSON.stringify({
+        question:
+          'Can you explain how a neural network changes its internal parameters after observing an error during one training example?',
+        intent:
+          'Check whether the learner connects errors to parameter updates.',
+      }),
+    ),
+  );
+});
+
+test('rejects a diagnostic response containing multiple questions', () => {
+  assert.throws(() =>
+    parseDiagnosticQuestion(
+      JSON.stringify({
+        question: 'What is a gradient? How does it change a parameter?',
+        intent: 'Check the learner understanding of gradients and updates.',
+      }),
+    ),
+  );
+});
+
 test('accepts evidence quoted exactly from the learner answer', () => {
   const answer =
     'The gradient shows how the loss changes, so the optimizer moves the parameters in the opposite direction.';
@@ -78,6 +102,31 @@ test('rejects evidence fabricated by the model', () => {
         answer,
       ),
     /Evidence must quote the learner answer exactly/,
+  );
+});
+
+test('rejects a verbose next question', () => {
+  const answer = 'The optimizer changes the weights.';
+
+  assert.throws(() =>
+    parseEvaluation(
+      JSON.stringify({
+        status: 'partial',
+        evidence: [
+          {
+            excerpt: 'changes the weights',
+            finding: 'Identifies that training updates model weights.',
+          },
+        ],
+        unresolvedGap: 'The update direction is not explained.',
+        uncertainty: 'low',
+        proposedNextMove: 'probe',
+        nextQuestion:
+          'Can you explain how the gradient indicates which direction every weight should move during the next optimization step?',
+        nextQuestionRationale: 'This isolates the missing update direction.',
+      }),
+      answer,
+    ),
   );
 });
 

@@ -11,7 +11,7 @@ const topicRequestSchema = z
 const attemptRequestSchema = z
   .object({
     topic: z.string().trim().min(2).max(160),
-    question: z.string().trim().min(10).max(320),
+    question: z.string().trim().min(5).max(140),
     answer: z.string().min(1).max(12_000),
   })
   .strict();
