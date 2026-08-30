@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 
-import type { DiagnosticQuestion, EvaluationResult } from '../../learning/contracts.ts';
+import type {
+  DiagnosticQuestion,
+  EvaluationResult,
+} from '../../learning/contracts.ts';
 import type {
   LearningSessionSummary,
   PersistedLearningSession,
@@ -88,7 +91,9 @@ export class LearningSessionRepository {
           timestamp,
         );
       this.database
-        .prepare('UPDATE learning_sessions SET current_question_id = ? WHERE id = ?')
+        .prepare(
+          'UPDATE learning_sessions SET current_question_id = ? WHERE id = ?',
+        )
         .run(questionId, sessionId);
     });
 
@@ -101,22 +106,29 @@ export class LearningSessionRepository {
       .get(input.questionId) as { answer: string } | undefined;
     if (existing) {
       if (existing.answer !== input.answer) {
-        throw new Error('This question already has a different acknowledged answer.');
+        throw new Error(
+          'This question already has a different acknowledged answer.',
+        );
       }
       return this.requireSession(input.sessionId);
     }
 
     const session = this.getSessionRow(input.sessionId);
     if (!session) throw new Error('Learning session not found.');
-    if (session.status !== 'active') throw new Error('Learning session is not active.');
+    if (session.status !== 'active')
+      throw new Error('Learning session is not active.');
     if (session.current_question_id !== input.questionId) {
       throw new Error('The question is not current for this learning session.');
     }
 
     const currentTurn = this.database
-      .prepare('SELECT turn_number FROM questions WHERE id = ? AND session_id = ?')
-      .get(input.questionId, input.sessionId) as { turn_number: number } | undefined;
-    if (!currentTurn) throw new Error('Question not found in this learning session.');
+      .prepare(
+        'SELECT turn_number FROM questions WHERE id = ? AND session_id = ?',
+      )
+      .get(input.questionId, input.sessionId) as
+      { turn_number: number } | undefined;
+    if (!currentTurn)
+      throw new Error('Question not found in this learning session.');
 
     const attemptId = this.createId();
     const evaluationId = this.createId();
@@ -129,7 +141,13 @@ export class LearningSessionRepository {
           `INSERT INTO attempts (id, session_id, question_id, answer, submitted_at)
            VALUES (?, ?, ?, ?, ?)`,
         )
-        .run(attemptId, input.sessionId, input.questionId, input.answer, timestamp);
+        .run(
+          attemptId,
+          input.sessionId,
+          input.questionId,
+          input.answer,
+          timestamp,
+        );
       this.database
         .prepare(
           `INSERT INTO evaluations
@@ -153,7 +171,12 @@ export class LearningSessionRepository {
          VALUES (?, ?, ?, ?)`,
       );
       input.evaluation.evidence.forEach((evidence, ordinal) => {
-        evidenceStatement.run(evaluationId, ordinal, evidence.excerpt, evidence.finding);
+        evidenceStatement.run(
+          evaluationId,
+          ordinal,
+          evidence.excerpt,
+          evidence.finding,
+        );
       });
       this.database
         .prepare(
@@ -239,7 +262,8 @@ export class LearningSessionRepository {
 
     return rows.map((row) => {
       const session = this.getSession(row.id);
-      if (!session) throw new Error('Learning session disappeared while listing.');
+      if (!session)
+        throw new Error('Learning session disappeared while listing.');
       const evaluations = session.turns.flatMap((turn) =>
         turn.evaluation ? [turn.evaluation] : [],
       );
@@ -250,13 +274,20 @@ export class LearningSessionRepository {
         startedAt: session.startedAt,
         updatedAt: session.updatedAt,
         endedAt: session.endedAt,
-        answeredTurns: session.turns.filter((turn) => turn.answer !== null).length,
+        answeredTurns: session.turns.filter((turn) => turn.answer !== null)
+          .length,
         totalQuestions: session.turns.length,
         evaluationCounts: {
-          demonstrated: evaluations.filter((item) => item.status === 'demonstrated').length,
-          partial: evaluations.filter((item) => item.status === 'partial').length,
-          misconception: evaluations.filter((item) => item.status === 'misconception').length,
-          uncertain: evaluations.filter((item) => item.status === 'uncertain').length,
+          demonstrated: evaluations.filter(
+            (item) => item.status === 'demonstrated',
+          ).length,
+          partial: evaluations.filter((item) => item.status === 'partial')
+            .length,
+          misconception: evaluations.filter(
+            (item) => item.status === 'misconception',
+          ).length,
+          uncertain: evaluations.filter((item) => item.status === 'uncertain')
+            .length,
         },
       };
     });

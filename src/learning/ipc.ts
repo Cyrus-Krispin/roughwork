@@ -92,7 +92,9 @@ export function parseSessionRequest(value: unknown): SessionRequest {
   return sessionRequestSchema.parse(value);
 }
 
-export function parseSubmitAttemptRequest(value: unknown): SubmitAttemptRequest {
+export function parseSubmitAttemptRequest(
+  value: unknown,
+): SubmitAttemptRequest {
   return submitAttemptRequestSchema.parse(value);
 }
 

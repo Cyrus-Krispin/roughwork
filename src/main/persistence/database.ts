@@ -78,7 +78,9 @@ function migrate(database: DatabaseSync): void {
   `);
 
   const current = database
-    .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations')
+    .prepare(
+      'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations',
+    )
     .get() as { version: number };
 
   for (const migration of migrations) {
@@ -88,7 +90,9 @@ function migrate(database: DatabaseSync): void {
     try {
       database.exec(migration.sql);
       database
-        .prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)')
+        .prepare(
+          'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)',
+        )
         .run(migration.version, new Date().toISOString());
       database.exec('COMMIT');
     } catch (error) {

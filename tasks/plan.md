@@ -180,8 +180,8 @@ The approved next vertical slice is specified in
 
 - [ ] Add versioned SQLite migrations and a tested session repository.
 - [ ] Move session start, attempt submission, and end transitions behind validated
-  main-process operations.
+      main-process operations.
 - [ ] Add recent-session history, resume, inspection, and confirmed deletion.
 - [ ] Verify interruption safety, restart recovery, Electron runtime behavior,
-  security checks, and packaging.
+      security checks, and packaging.
 - [ ] Record the provenance boundary for later evidence-graph projections.

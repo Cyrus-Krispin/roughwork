@@ -51,7 +51,10 @@ test('opens a migrated database with safety pragmas enabled', () => {
 test('creates and reloads an active session at its current question', () => {
   const { database, repository } = createRepository();
 
-  const created = repository.createSession('  Database indexes  ', diagnosticQuestion);
+  const created = repository.createSession(
+    '  Database indexes  ',
+    diagnosticQuestion,
+  );
   const reloaded = repository.getSession(created.id);
 
   assert.equal(created.topic, 'Database indexes');
@@ -71,7 +74,10 @@ test('creates and reloads an active session at its current question', () => {
 
 test('atomically records immutable evidence and advances the current question', () => {
   const { database, repository } = createRepository();
-  const session = repository.createSession('Database indexes', diagnosticQuestion);
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
 
   const saved = repository.recordEvaluation({
     sessionId: session.id,
@@ -82,7 +88,10 @@ test('atomically records immutable evidence and advances the current question', 
 
   assert.equal(saved.turns.length, 2);
   assert.equal(saved.currentQuestionId, saved.turns[1].questionId);
-  assert.equal(saved.turns[0].answer, 'They avoid scanning every row for each lookup.');
+  assert.equal(
+    saved.turns[0].answer,
+    'They avoid scanning every row for each lookup.',
+  );
   assert.deepEqual(saved.turns[0].evaluation, evaluation);
   assert.equal(saved.turns[1].question, evaluation.nextQuestion);
   assert.equal(saved.turns[1].intent, evaluation.nextQuestionRationale);
@@ -102,7 +111,10 @@ test('atomically records immutable evidence and advances the current question', 
 
 test('returns the saved result when an acknowledged submission is retried', () => {
   const { database, repository } = createRepository();
-  const session = repository.createSession('Database indexes', diagnosticQuestion);
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
   const input = {
     sessionId: session.id,
     questionId: session.currentQuestionId,
@@ -112,7 +124,9 @@ test('returns the saved result when an acknowledged submission is retried', () =
 
   const first = repository.recordEvaluation(input);
   const retry = repository.recordEvaluation(input);
-  const attemptCount = database.prepare('SELECT COUNT(*) AS count FROM attempts').get();
+  const attemptCount = database
+    .prepare('SELECT COUNT(*) AS count FROM attempts')
+    .get();
 
   assert.deepEqual(retry, first);
   assert.equal(attemptCount.count, 1);
@@ -121,7 +135,10 @@ test('returns the saved result when an acknowledged submission is retried', () =
 
 test('ends without changing history and rejects later submissions', () => {
   const { database, repository } = createRepository();
-  const session = repository.createSession('Database indexes', diagnosticQuestion);
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
 
   const ended = repository.endSession(session.id);
 
@@ -142,7 +159,10 @@ test('ends without changing history and rejects later submissions', () => {
 
 test('lists evidence-based summaries and deletes only the selected session', () => {
   const { database, repository } = createRepository();
-  const first = repository.createSession('Database indexes', diagnosticQuestion);
+  const first = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
   repository.recordEvaluation({
     sessionId: first.id,
     questionId: first.currentQuestionId,

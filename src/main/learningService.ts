@@ -1,4 +1,7 @@
-import type { DiagnosticQuestion, EvaluationResult } from '../learning/contracts.ts';
+import type {
+  DiagnosticQuestion,
+  EvaluationResult,
+} from '../learning/contracts.ts';
 import type {
   LearningSessionSummary,
   PersistedLearningSession,
@@ -33,7 +36,8 @@ export class LearningService {
   }
 
   async startSession(topic: string): Promise<PersistedLearningSession> {
-    const question = await this.createProvider().createDiagnosticQuestion(topic);
+    const question =
+      await this.createProvider().createDiagnosticQuestion(topic);
     return this.repository.createSession(topic, question);
   }
 
@@ -49,7 +53,9 @@ export class LearningService {
 
     if (turn.answer !== null) {
       if (turn.answer !== input.answer) {
-        throw new Error('This question already has a different acknowledged answer.');
+        throw new Error(
+          'This question already has a different acknowledged answer.',
+        );
       }
       return session;
     }

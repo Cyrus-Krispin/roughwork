@@ -36,7 +36,11 @@ test('accepts bounded persisted-session requests', () => {
 
   assert.deepEqual(parseSessionRequest({ sessionId }), { sessionId });
   assert.deepEqual(
-    parseSubmitAttemptRequest({ sessionId, questionId, answer: '  Evidence  ' }),
+    parseSubmitAttemptRequest({
+      sessionId,
+      questionId,
+      answer: '  Evidence  ',
+    }),
     { sessionId, questionId, answer: '  Evidence  ' },
   );
   assert.deepEqual(parseListSessionsRequest({}), { limit: 20 });
