@@ -7,7 +7,6 @@ import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import started from 'electron-squirrel-startup';
 
 import {
-  parseAttemptRequest,
   parseListSessionsRequest,
   parseSessionRequest,
   parseSubmitAttemptRequest,
@@ -50,24 +49,6 @@ function registerLearningHandlers(service: LearningService): void {
       configured: Boolean(process.env.DEEPSEEK_API_KEY?.trim()),
       model: process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
     };
-  });
-
-  ipcMain.handle('learning:create-diagnostic-question', (event, value) => {
-    assertTrustedRenderer(event);
-    return learningResult(async () => {
-      const request = parseTopicRequest(value);
-      return createDeepSeekProviderFromEnvironment().createDiagnosticQuestion(
-        request.topic,
-      );
-    });
-  });
-
-  ipcMain.handle('learning:evaluate-attempt', (event, value) => {
-    assertTrustedRenderer(event);
-    return learningResult(async () => {
-      const request = parseAttemptRequest(value);
-      return createDeepSeekProviderFromEnvironment().evaluateAttempt(request);
-    });
   });
 
   ipcMain.handle('learning:start-session', (event, value) => {

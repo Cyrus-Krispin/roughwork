@@ -178,10 +178,10 @@ After the first real AI session, choose:
 The approved next vertical slice is specified in
 [`docs/local-session-persistence.md`](../docs/local-session-persistence.md).
 
-- [ ] Add versioned SQLite migrations and a tested session repository.
-- [ ] Move session start, attempt submission, and end transitions behind validated
+- [x] Add versioned SQLite migrations and a tested session repository.
+- [x] Move session start, attempt submission, and end transitions behind validated
       main-process operations.
-- [ ] Add recent-session history, resume, inspection, and confirmed deletion.
-- [ ] Verify interruption safety, restart recovery, Electron runtime behavior,
+- [x] Add recent-session history, resume, inspection, and confirmed deletion.
+- [x] Verify interruption safety, restart recovery, Electron runtime behavior,
       security checks, and packaging.
-- [ ] Record the provenance boundary for later evidence-graph projections.
+- [x] Record the provenance boundary for later evidence-graph projections.

@@ -27,6 +27,8 @@ Decision gate: verify that evaluations cite the learner's exact answer, remain b
 
 ## Phase 2: Local Session Persistence
 
+Status: core persistence implemented; backup and export remain follow-up work.
+
 Outcome: the learner can reopen, inspect, and delete local AI learning sessions without depending on a cloud account.
 
 - SQLite persistence with versioned migrations

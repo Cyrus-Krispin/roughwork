@@ -1,6 +1,6 @@
 # ThinkEdge Architecture
 
-Status: Phase 1 implemented; persistence and longitudinal learning remain planned.
+Status: Phase 2 local session persistence implemented; longitudinal learning remains planned.
 
 ## Decision Summary
 
@@ -27,7 +27,7 @@ Electron main process
   secure settings
 ```
 
-## Current Phase 1 Architecture
+## Current Architecture
 
 The first learning slice now implements these boundaries:
 
@@ -38,12 +38,16 @@ The first learning slice now implements these boundaries:
 - TypeScript checks both environments.
 - Electron Forge packages the application.
 - The main process calls DeepSeek V4 Flash and validates structured output.
-- A narrow preload API exposes provider status, question generation, and answer
-  evaluation without exposing raw IPC or the provider key.
-- The renderer owns an in-memory learning state machine and preserves submitted
-  answers across recoverable provider failures.
+- A narrow preload API exposes provider status and named session start, submit,
+  list, load, end, and delete operations without exposing raw IPC, SQLite, local
+  paths, or the provider key.
+- The main process owns a versioned SQLite database, validates authoritative
+  session state, and atomically stores immutable attempts, evaluations, exact
+  evidence, and each proposed next question.
+- The renderer owns transient interaction state and hydrates it from persisted
+  session records for resume and read-only review.
 
-## Planned Process Responsibilities
+## Process Responsibilities
 
 ### Main process
 
@@ -68,21 +72,26 @@ The first learning slice now implements these boundaries:
 - show concise feedback, uncertainty, evidence, and session summaries;
 - never access secrets, the filesystem, a database, or a model provider directly.
 
-## Planned Data Model
+## Current Data Model
 
-The likely SQLite entities are:
+The implemented SQLite entities are:
 
-- `topics`: learner-named subject scopes;
-- `sessions`: bounded learning interactions and their status;
-- `sources`: optional learner-supplied material and provenance;
-- `questions`: prompts, intent, difficulty, and parent relationship;
+- `learning_sessions`: learner-named subject scopes and lifecycle status;
+- `questions`: ordered prompts, intent, and parent evaluation provenance;
 - `attempts`: immutable learner answers and timestamps;
 - `evaluations`: validated judgments, reasons, uncertainty, and next moves;
+- `evaluation_evidence`: ordered exact excerpts and findings;
+- `schema_migrations`: applied local schema versions.
+
+Future evidence-graph entities remain planned:
+
+- `sources`: optional learner-supplied material and provenance;
 - `concepts`: normalized concepts inferred from accumulated evidence;
 - `concept_evidence`: links between concepts and exact attempts or evaluations;
 - `concept_edges`: proposed relationships with provenance and learner status.
 
-This is a hypothesis, not an approved schema. Phase 1 should begin with only the fields required by the deterministic session loop. Concept and edge tables wait until longitudinal evidence exists.
+Concept and edge tables wait until longitudinal evidence exists. Their claims
+must reference the stable attempt, evaluation, or evidence IDs implemented now.
 
 ## Planned Model Contract
 
@@ -107,7 +116,10 @@ The model cannot alter the learner's answer, mark a topic mastered, or write gra
 
 ## Dependency Policy
 
-Add dependencies only when a planned vertical slice requires them. Expected candidates include SQLite access and runtime schema validation. Voice transcription and graph rendering are deferred. The baseline does not need an AI orchestration library.
+Add dependencies only when a planned vertical slice requires them. SQLite uses
+Electron's built-in `node:sqlite`, so persistence adds no production dependency
+or native install script. Voice transcription and graph rendering are deferred.
+The application does not need an AI orchestration library.
 
 ## Architecture References
 

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import type { DiagnosticQuestion, EvaluationResult } from './contracts.ts';
 import type {
   LearningSessionSummary,
   PersistedLearningSession,
@@ -56,12 +55,6 @@ export type LearningResult<T> =
 
 export type ThinkEdgeApi = {
   getProviderStatus(): Promise<{ configured: boolean; model: string }>;
-  createDiagnosticQuestion(
-    request: TopicRequest,
-  ): Promise<LearningResult<DiagnosticQuestion>>;
-  evaluateAttempt(
-    request: AttemptRequest,
-  ): Promise<LearningResult<EvaluationResult>>;
   startSession(
     request: TopicRequest,
   ): Promise<LearningResult<PersistedLearningSession>>;
