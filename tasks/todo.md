@@ -45,19 +45,19 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 **Estimated scope:** Small (2 files)
 
-## Task 3: Add secure provider configuration
+## Task 3: Add local provider configuration
 
-**Description:** Allow the learner to configure one provider credential without exposing it to the renderer.
+**Description:** Load the DeepSeek credential from an ignored local `.env` file without exposing it to the renderer.
 
 **Acceptance criteria:**
 
 - [ ] The renderer can learn only whether a credential is configured.
-- [ ] Encryption and decryption happen in the Electron main process using OS-backed storage.
-- [ ] The credential is redacted from errors and never written to logs or Git-tracked files.
+- [ ] `.env` and `.env.*` are ignored while `.env.example` documents the required variable without a value.
+- [ ] The credential is loaded only by the Electron main process, redacted from errors, and never written to logs or Git-tracked files.
 
 **Verification:**
 
-- [ ] Main-process tests cover configured, missing, unavailable, and replacement states.
+- [ ] Main-process tests cover configured and missing states.
 - [ ] Manual inspection confirms renderer payloads never contain the key.
 
 **Dependencies:** Task 1

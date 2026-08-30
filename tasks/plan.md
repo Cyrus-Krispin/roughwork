@@ -22,7 +22,7 @@ Learner names topic
 ## Architecture Decisions
 
 - Integrate one provider directly for the first slice; do not introduce LangChain or LangGraph yet.
-- Put credentials and provider calls in the Electron main process. The renderer receives only typed learning results.
+- Load the first development credential from an ignored local `.env` file and keep provider calls in the Electron main process. The renderer receives only typed learning results.
 - Use a narrow provider interface so a second provider can be added later without redesigning the session domain.
 - Require structured output and runtime validation for every model response.
 - Preserve the learner's answer exactly and require every positive or negative finding to quote an exact excerpt from it.
@@ -64,7 +64,7 @@ Application validation must reject a response when:
 ## First User Flow
 
 ```text
-Provider setup
+Local `.env` setup
   -> New session
       -> Enter topic
           -> AI question
@@ -92,7 +92,7 @@ The first version needs loading, retry, invalid-response, missing-credential, ne
 
 ### Phase 2: Connect one provider securely
 
-- [ ] Task 3: Store and retrieve the provider credential in the Electron main process
+- [ ] Task 3: Load the ignored local provider credential in the Electron main process
 - [ ] Task 4: Implement diagnostic-question and evaluation calls through the provider interface
 - [ ] Task 5: Expose narrow typed preload operations and validate IPC senders and payloads
 
@@ -144,12 +144,13 @@ For each case, record the acceptable status, required concept evidence, forbidde
 ## Next Vertical Slices
 
 1. **Local persistence:** SQLite migrations, immutable attempts, resumable sessions, backup, and export.
-2. **Adaptive help:** rephrase, smaller question, hint, partial example, direct explanation, and learner challenge.
-3. **Retention:** revisit queue and delayed retrieval based on evidence.
-4. **Grounded sources:** pasted text and documents with passage provenance.
-5. **Evidence graph:** concepts, prerequisites, misconceptions, and relationships backed by attempts.
-6. **Optional orchestration:** LangGraph only if long-running, resumable workflows outgrow the application state machine.
-7. **Optional cloud:** accounts, encrypted sync, managed provider usage, and PostgreSQL after local product validation.
+2. **Packaged credential setup:** move from development `.env` loading to a signed app settings flow backed by macOS Keychain.
+3. **Adaptive help:** rephrase, smaller question, hint, partial example, direct explanation, and learner challenge.
+4. **Retention:** revisit queue and delayed retrieval based on evidence.
+5. **Grounded sources:** pasted text and documents with passage provenance.
+6. **Evidence graph:** concepts, prerequisites, misconceptions, and relationships backed by attempts.
+7. **Optional orchestration:** LangGraph only if long-running, resumable workflows outgrow the application state machine.
+8. **Optional cloud:** accounts, encrypted sync, managed provider usage, and PostgreSQL after local product validation.
 
 ## Risks and Mitigations
 

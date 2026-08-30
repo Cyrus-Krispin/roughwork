@@ -12,6 +12,21 @@ The repository currently contains only the desktop foundation. Product features 
 
 ## Development
 
+Create your local environment file and add your DeepSeek API key:
+
+```bash
+cp .env.example .env
+```
+
+```dotenv
+DEEPSEEK_API_KEY=
+```
+
+`.env` and `.env.*` are ignored by Git. Only `.env.example`, which contains no
+secret, is committed. Restart ThinkEdge after changing the key.
+
+Then install and start the application:
+
 ```bash
 npm install
 npm start
