@@ -1,10 +1,10 @@
 import { type FormEvent, useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
-const suggestions = [
-  'How neural networks learn',
-  'The intuition behind derivatives',
-  'How databases use indexes',
-];
+const suggestions = ['Neural networks', 'Derivatives', 'Database indexes'];
 
 type StartViewProps = {
   onStart(topic: string): Promise<void>;
@@ -19,62 +19,78 @@ export function StartView({ onStart }: StartViewProps) {
   }
 
   return (
-    <main className="start-view">
-      <section className="start-intro" aria-labelledby="start-heading">
-        <p className="kicker">Adaptive learning, one question at a time</p>
-        <h1 id="start-heading">Find the edge of what you know.</h1>
-        <p className="intro-copy">
-          ThinkEdge starts with your explanation—not an AI lecture. Each answer
-          reveals the next useful question.
-        </p>
-        <ol className="principle-list">
-          <li>
-            <span>01</span> Attempt before assistance
-          </li>
-          <li>
-            <span>02</span> Evidence instead of confidence scores
-          </li>
-          <li>
-            <span>03</span> One reachable step beyond
-          </li>
-        </ol>
-      </section>
-
-      <section className="topic-panel" aria-labelledby="topic-heading">
-        <p className="panel-number">01 / Start</p>
-        <h2 id="topic-heading">What are you trying to understand?</h2>
-        <form onSubmit={submit}>
-          <label htmlFor="topic">Topic or idea</label>
-          <textarea
-            id="topic"
+    <Box
+      component="main"
+      sx={{
+        display: 'flex',
+        minHeight: 'calc(100vh - 4rem)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        px: { xs: 2.5, sm: 6 },
+        py: 6,
+      }}
+    >
+      <Box
+        component="section"
+        aria-labelledby="start-heading"
+        sx={{
+          width: 'min(100%, 56rem)',
+        }}
+      >
+        <Typography
+          id="start-heading"
+          component="h1"
+          variant="h1"
+          sx={{
+            maxWidth: '18ch',
+            fontSize: { xs: '2.75rem', sm: 'clamp(3rem, 6vw, 4.75rem)' },
+            lineHeight: 0.98,
+          }}
+        >
+          What should we learn?
+        </Typography>
+        <Box component="form" onSubmit={submit} sx={{ mt: { xs: 5, sm: 7 } }}>
+          <TextField
+            variant="standard"
+            fullWidth
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
-            placeholder="e.g. How transformers use attention"
-            rows={4}
             autoFocus
+            slotProps={{
+              input: {
+                sx: {
+                  fontSize: { xs: '1.5rem', sm: '2rem' },
+                  fontWeight: 400,
+                  lineHeight: 1.4,
+                  pb: 1.5,
+                },
+              },
+              htmlInput: { 'aria-label': 'Topic or question' },
+            }}
           />
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={!topic.trim()}
-          >
-            Ask my first question
-            <span aria-hidden="true">→</span>
-          </button>
-        </form>
-        <div className="suggestions" aria-label="Suggested topics">
-          <span>Try a topic</span>
-          {suggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => setTopic(suggestion)}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </section>
-    </main>
+        </Box>
+        <Box
+          aria-label="Suggested topics"
+          sx={{
+            mt: { xs: 4, sm: 5 },
+          }}
+        >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {suggestions.map((suggestion) => (
+              <Button
+                key={suggestion}
+                variant="text"
+                color="inherit"
+                type="button"
+                onClick={() => void onStart(suggestion)}
+                sx={{ color: 'text.secondary', fontSize: '0.78rem' }}
+              >
+                {suggestion}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

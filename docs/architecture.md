@@ -33,6 +33,8 @@ The first learning slice now implements these boundaries:
 
 - Electron controls the application lifecycle and desktop window.
 - React owns the renderer UI.
+- Material UI provides the renderer's component primitives, responsive layout,
+  and centralized visual theme without an application stylesheet pipeline.
 - TypeScript checks both environments.
 - Electron Forge packages the application.
 - The main process calls DeepSeek V4 Flash and validates structured output.

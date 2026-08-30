@@ -1,4 +1,9 @@
 import type { FormEvent } from 'react';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
 type QuestionViewProps = {
   topic: string;
@@ -31,51 +36,103 @@ export function QuestionView({
   }
 
   return (
-    <main className="question-view">
-      <div className="session-rail" aria-label="Session progress">
-        <span>Question {String(turn).padStart(2, '0')}</span>
-        <span>{topic}</span>
-      </div>
-      <section className="question-stage" aria-labelledby="active-question">
-        <p className="kicker">Think it through in your own words</p>
-        <h1 id="active-question">{question}</h1>
-        <form className="answer-form" onSubmit={submit}>
-          <label htmlFor="answer">Your explanation</label>
-          <textarea
-            id="answer"
+    <Box
+      component="main"
+      sx={{
+        minHeight: 'calc(100vh - 4rem)',
+        px: { xs: 2.5, sm: 6 },
+        py: { xs: 5, sm: 8 },
+      }}
+    >
+      <Box
+        component="section"
+        aria-labelledby="active-question"
+        sx={{
+          width: 'min(100%, 56rem)',
+          mx: 'auto',
+        }}
+      >
+        <Typography
+          variant="overline"
+          color="text.secondary"
+          sx={{ fontWeight: 700 }}
+        >
+          {topic} · {String(turn).padStart(2, '0')}
+        </Typography>
+        <Typography
+          id="active-question"
+          component="h1"
+          variant="h1"
+          sx={{
+            maxWidth: '22ch',
+            mt: 2,
+            mb: { xs: 5, sm: 6 },
+            fontSize: {
+              xs: 'clamp(2.25rem, 10vw, 3.25rem)',
+              sm: 'clamp(2.5rem, 5vw, 4.25rem)',
+            },
+            lineHeight: 1.08,
+          }}
+        >
+          {question}
+        </Typography>
+        <Box component="form" onSubmit={submit} sx={{ display: 'grid' }}>
+          <TextField
+            label="Your answer"
             value={answer}
             onChange={(event) => onAnswerChange(event.target.value)}
-            placeholder="Start with what you believe is happening. It is okay to be incomplete."
-            rows={8}
+            multiline
+            minRows={5}
             disabled={busy}
             autoFocus
+            slotProps={{
+              input: {
+                sx: {
+                  fontSize: '1.18rem',
+                  lineHeight: 1.65,
+                },
+              },
+            }}
           />
-          <div className="answer-actions">
-            <p>ThinkEdge will evaluate only what this answer demonstrates.</p>
-            <button
-              className="primary-button"
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <Button
+              variant="contained"
               type="submit"
               disabled={busy || !answer.trim()}
+              sx={{ minHeight: '3rem', width: { xs: '100%', sm: 'auto' } }}
             >
-              {busy ? 'Reading your reasoning…' : 'Review my answer'}
-              {!busy && <span aria-hidden="true">→</span>}
-            </button>
-          </div>
-        </form>
+              {busy ? 'Checking…' : 'Check'}
+              {!busy && (
+                <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
+                  →
+                </Box>
+              )}
+            </Button>
+          </Box>
+        </Box>
         {error && (
-          <div className="error-banner" role="alert">
-            <div>
-              <strong>The connection broke, not your work.</strong>
-              <p>{error}</p>
-            </div>
-            {canRetry && (
-              <button type="button" onClick={() => void onRetry()}>
-                Try again
-              </button>
-            )}
-          </div>
+          <Alert
+            severity="error"
+            variant="outlined"
+            role="alert"
+            action={
+              canRetry ? (
+                <Button
+                  color="error"
+                  size="small"
+                  type="button"
+                  onClick={() => void onRetry()}
+                >
+                  Try again
+                </Button>
+              ) : undefined
+            }
+            sx={{ mt: 3, bgcolor: '#f3e3dc' }}
+          >
+            {error}
+          </Alert>
         )}
-      </section>
-    </main>
+      </Box>
+    </Box>
   );
 }
