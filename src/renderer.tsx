@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 
 import { App } from './App';
-import './index.css';
 import { thinkEdgeTheme } from './theme';
 
 const rootElement = document.getElementById('root');

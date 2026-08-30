@@ -47,13 +47,11 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
-    "css-loader": "6.11.0",
     "electron": "44.0.0",
     "eslint": "10.9.1",
     "fork-ts-checker-webpack-plugin": "7.3.0",
     "node-loader": "2.1.0",
     "prettier": "3.9.6",
-    "style-loader": "3.3.4",
     "ts-loader": "9.6.2",
     "typescript": "5.9.3",
     "typescript-eslint": "8.68.0"
