@@ -16,6 +16,7 @@ type ChatCompletionRequest = {
   model: string;
   messages: ChatMessage[];
   response_format: { type: 'json_object' };
+  thinking: { type: 'disabled' };
   max_tokens: number;
   temperature: number;
   stream: false;
@@ -76,6 +77,7 @@ export class DeepSeekLearningProvider {
         },
       ],
       response_format: { type: 'json_object' },
+      thinking: { type: 'disabled' },
       max_tokens: 320,
       temperature: 0.2,
       stream: false,
@@ -91,14 +93,17 @@ export class DeepSeekLearningProvider {
         { role: 'system', content: evaluationSystemPrompt },
         {
           role: 'user',
-          content: `Evaluate this attempt and choose one next question. Input JSON: ${JSON.stringify({
-            topic: context.topic,
-            question: context.question,
-            learnerAnswer: context.answer,
-          })}`,
+          content: `Evaluate this attempt and choose one next question. Input JSON: ${JSON.stringify(
+            {
+              topic: context.topic,
+              question: context.question,
+              learnerAnswer: context.answer,
+            },
+          )}`,
         },
       ],
       response_format: { type: 'json_object' },
+      thinking: { type: 'disabled' },
       max_tokens: 900,
       temperature: 0.2,
       stream: false,
@@ -126,6 +131,6 @@ export function createDeepSeekProviderFromEnvironment(): DeepSeekLearningProvide
 
   return new DeepSeekLearningProvider(
     client as unknown as ChatCompletionClient,
-    process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-pro',
+    process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
   );
 }

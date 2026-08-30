@@ -28,7 +28,7 @@ test('requests a JSON diagnostic question from DeepSeek', async () => {
       intent: 'Check whether the learner understands the optimization target.',
     }),
   );
-  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-pro');
+  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-flash');
 
   const result = await provider.createDiagnosticQuestion('Model training');
 
@@ -40,7 +40,8 @@ test('requests a JSON diagnostic question from DeepSeek', async () => {
   assert.deepEqual(client.requests[0].response_format, {
     type: 'json_object',
   });
-  assert.equal(client.requests[0].model, 'deepseek-v4-pro');
+  assert.equal(client.requests[0].model, 'deepseek-v4-flash');
+  assert.deepEqual(client.requests[0].thinking, { type: 'disabled' });
   assert.match(client.requests[0].messages[1].content, /Model training/);
 });
 
@@ -62,7 +63,7 @@ test('evaluates an attempt and proposes exactly one next question', async () => 
       nextQuestionRationale: 'This probes the missing update mechanism.',
     }),
   );
-  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-pro');
+  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-flash');
 
   const result = await provider.evaluateAttempt({
     topic: 'Model training',
@@ -76,11 +77,12 @@ test('evaluates an attempt and proposes exactly one next question', async () => 
   assert.deepEqual(client.requests[0].response_format, {
     type: 'json_object',
   });
+  assert.deepEqual(client.requests[0].thinking, { type: 'disabled' });
 });
 
 test('fails closed when DeepSeek returns empty content', async () => {
   const client = fakeClient(null);
-  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-pro');
+  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-flash');
 
   await assert.rejects(
     provider.createDiagnosticQuestion('Calculus'),

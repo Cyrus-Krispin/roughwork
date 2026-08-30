@@ -39,7 +39,7 @@ function registerLearningHandlers(): void {
     assertTrustedRenderer(event);
     return {
       configured: Boolean(process.env.DEEPSEEK_API_KEY?.trim()),
-      model: process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-pro',
+      model: process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
     };
   });
 
