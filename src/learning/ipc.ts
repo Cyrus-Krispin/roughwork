@@ -11,14 +11,6 @@ const topicRequestSchema = z
   })
   .strict();
 
-const attemptRequestSchema = z
-  .object({
-    topic: z.string().trim().min(2).max(160),
-    question: z.string().trim().min(5).max(140),
-    answer: z.string().min(1).max(12_000),
-  })
-  .strict();
-
 const sessionRequestSchema = z
   .object({
     sessionId: z.uuid(),
@@ -40,7 +32,6 @@ const listSessionsRequestSchema = z
   .strict();
 
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
-export type AttemptRequest = z.infer<typeof attemptRequestSchema>;
 export type SessionRequest = z.infer<typeof sessionRequestSchema>;
 export type SubmitAttemptRequest = z.infer<typeof submitAttemptRequestSchema>;
 export type ListSessionsRequest = z.infer<typeof listSessionsRequestSchema>;
@@ -75,10 +66,6 @@ export type ThinkEdgeApi = {
 
 export function parseTopicRequest(value: unknown): TopicRequest {
   return topicRequestSchema.parse(value);
-}
-
-export function parseAttemptRequest(value: unknown): AttemptRequest {
-  return attemptRequestSchema.parse(value);
 }
 
 export function parseSessionRequest(value: unknown): SessionRequest {

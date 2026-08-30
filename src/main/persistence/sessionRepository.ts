@@ -42,6 +42,15 @@ type TurnRow = {
   next_question_rationale: string | null;
 };
 
+type SummaryRow = SessionRow & {
+  answered_turns: number;
+  total_questions: number;
+  demonstrated_count: number;
+  partial_count: number;
+  misconception_count: number;
+  uncertain_count: number;
+};
+
 export type RecordEvaluationInput = {
   sessionId: string;
   questionId: string;
@@ -252,45 +261,44 @@ export class LearningSessionRepository {
   listSessions(limit: number): LearningSessionSummary[] {
     const rows = this.database
       .prepare(
-        `SELECT id, topic, status, started_at, updated_at, ended_at,
-                current_question_id
-         FROM learning_sessions
-         ORDER BY updated_at DESC, started_at DESC
+        `SELECT s.id, s.topic, s.status, s.started_at, s.updated_at, s.ended_at,
+                s.current_question_id,
+                COUNT(DISTINCT q.id) AS total_questions,
+                COUNT(DISTINCT a.id) AS answered_turns,
+                SUM(CASE WHEN e.status = 'demonstrated' THEN 1 ELSE 0 END)
+                  AS demonstrated_count,
+                SUM(CASE WHEN e.status = 'partial' THEN 1 ELSE 0 END)
+                  AS partial_count,
+                SUM(CASE WHEN e.status = 'misconception' THEN 1 ELSE 0 END)
+                  AS misconception_count,
+                SUM(CASE WHEN e.status = 'uncertain' THEN 1 ELSE 0 END)
+                  AS uncertain_count
+         FROM learning_sessions s
+         LEFT JOIN questions q ON q.session_id = s.id
+         LEFT JOIN attempts a ON a.question_id = q.id
+         LEFT JOIN evaluations e ON e.attempt_id = a.id AND e.revision = 1
+         GROUP BY s.id
+         ORDER BY s.updated_at DESC, s.started_at DESC
          LIMIT ?`,
       )
-      .all(limit) as SessionRow[];
+      .all(limit) as SummaryRow[];
 
-    return rows.map((row) => {
-      const session = this.getSession(row.id);
-      if (!session)
-        throw new Error('Learning session disappeared while listing.');
-      const evaluations = session.turns.flatMap((turn) =>
-        turn.evaluation ? [turn.evaluation] : [],
-      );
-      return {
-        id: session.id,
-        topic: session.topic,
-        status: session.status,
-        startedAt: session.startedAt,
-        updatedAt: session.updatedAt,
-        endedAt: session.endedAt,
-        answeredTurns: session.turns.filter((turn) => turn.answer !== null)
-          .length,
-        totalQuestions: session.turns.length,
-        evaluationCounts: {
-          demonstrated: evaluations.filter(
-            (item) => item.status === 'demonstrated',
-          ).length,
-          partial: evaluations.filter((item) => item.status === 'partial')
-            .length,
-          misconception: evaluations.filter(
-            (item) => item.status === 'misconception',
-          ).length,
-          uncertain: evaluations.filter((item) => item.status === 'uncertain')
-            .length,
-        },
-      };
-    });
+    return rows.map((row) => ({
+      id: row.id,
+      topic: row.topic,
+      status: row.status,
+      startedAt: row.started_at,
+      updatedAt: row.updated_at,
+      endedAt: row.ended_at,
+      answeredTurns: row.answered_turns,
+      totalQuestions: row.total_questions,
+      evaluationCounts: {
+        demonstrated: row.demonstrated_count,
+        partial: row.partial_count,
+        misconception: row.misconception_count,
+        uncertain: row.uncertain_count,
+      },
+    }));
   }
 
   deleteSession(sessionId: string): boolean {

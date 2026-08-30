@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  parseAttemptRequest,
   parseListSessionsRequest,
   parseSessionRequest,
   parseSubmitAttemptRequest,
@@ -18,16 +17,6 @@ test('trims a valid topic request', () => {
 
 test('rejects an empty topic request', () => {
   assert.throws(() => parseTopicRequest({ topic: '   ' }));
-});
-
-test('accepts a bounded attempt request', () => {
-  const request = {
-    topic: 'Model training',
-    question: 'Why is a loss function necessary?',
-    answer: 'It gives optimization a measurable objective.',
-  };
-
-  assert.deepEqual(parseAttemptRequest(request), request);
 });
 
 test('accepts bounded persisted-session requests', () => {
