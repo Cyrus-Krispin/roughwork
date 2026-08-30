@@ -1,16 +1,17 @@
-# Implementation Plan: Roughwork
+# Implementation Plan: ThinkEdge
 
 ## Overview
 
-Build Roughwork as a sequence of narrow, local-first learning workflows. The first increment is only a secure and verifiable Electron/React baseline. Product phases then proceed vertically from capture to review, retrieval, connections, and the learning frontier.
+Build ThinkEdge as narrow, local-first vertical learning loops. After the secure Electron/React baseline, validate the interaction rhythm with deterministic data before adding a model. Then test constrained evaluation, adaptive questioning, retention, and finally an evidence graph.
 
 ## Architecture Decisions
 
-- Use Electron, React, and TypeScript so the desktop shell and interface share a widely supported language and ecosystem.
-- Keep privileged work in the Electron main process and expose only task-specific preload methods.
-- Add persistence, editor, model, and graph dependencies only when their vertical slice begins.
-- Store learner data locally first; introduce remote infrastructure only after a validated need.
-- Treat AI output as untrusted structured proposals that require validation and, where appropriate, learner approval.
+- Use Electron, React, and TypeScript so the desktop shell and interface share a widely supported ecosystem.
+- Keep privileged work and model calls in the Electron main process behind task-specific preload methods.
+- Model a learning session as explicit deterministic states; treat model output as untrusted input to those states.
+- Call the first model provider directly and validate structured responses; do not add LangChain or another orchestration framework initially.
+- Store learner data locally first and introduce remote infrastructure only after a validated need.
+- Derive future graph claims from preserved answer evidence, never from unsupported model summaries.
 
 ## Dependency Graph
 
@@ -18,19 +19,19 @@ Build Roughwork as a sequence of narrow, local-first learning workflows. The fir
 Desktop baseline
     |
     v
-Local note capture
+Deterministic local session
     |
     v
-Explicit AI review
+Constrained AI evaluation
     |
     v
-Questions and attempts
+Adaptive question and help selection
     |
     v
-Approved concepts and links
+Retention and optional sources
     |
     v
-Learning frontier and audits
+Evidence graph and learning frontier
 ```
 
 ## Task List
@@ -44,80 +45,80 @@ Learning frontier and audits
 ### Checkpoint: Foundation
 
 - [ ] The app launches on macOS
-- [ ] Linting, type checking, tests, and packaging pass
+- [ ] Linting, type checking, tests, formatting, and packaging pass
 - [ ] No product dependency or feature has been added
-- [ ] Founder reviews the product specification and roadmap
+- [ ] Founder reviews the updated product direction and MVP boundary
 
-### Phase 1: Capture
+### Phase 1: Deterministic Session Shell
 
-- [ ] Task 3: Create and edit one plain local note
-- [ ] Task 4: Persist and reopen the note using a versioned SQLite schema
-- [ ] Task 5: Add autosave recovery and Markdown import/export
+- [ ] Task 3: Define session, question, attempt, evaluation, and help-ladder domain states with tests
+- [ ] Task 4: Build the topic, question, text-answer, feedback, and session-summary interface using fixtures
+- [ ] Task 5: Persist and reopen immutable session history using a versioned local schema
 
-### Checkpoint: Capture
+### Checkpoint: Session Shell
 
-- [ ] The complete capture flow works offline
-- [ ] Simulated interruption does not lose acknowledged content
-- [ ] The persistence design is approved before AI integration
+- [ ] The full loop works offline with deterministic fixtures
+- [ ] The UI shows one question at a time and never overwrites an answer
+- [ ] Simulated interruption does not lose acknowledged attempts
 
-### Phase 2: Review
+### Phase 2: Constrained AI Evaluation
 
-- [ ] Task 6: Define and evaluate the review behavior contract
-- [ ] Task 7: Store provider credentials and request an explicit review
-- [ ] Task 8: Display validated passage-level review proposals
+- [ ] Task 6: Define a structured evaluation and next-question contract with adversarial fixtures
+- [ ] Task 7: Store provider credentials securely and call the provider from the main process
+- [ ] Task 8: Validate, persist, and display brief evidence-grounded evaluations and explicit uncertainty
 
-### Checkpoint: Review
+### Checkpoint: AI Evaluation
 
-- [ ] AI runs only after explicit learner action
-- [ ] The model cannot rewrite the note or silently change stored concepts
-- [ ] Provider and validation failures preserve the note and explain recovery
+- [ ] The model cites the learner's answer and distinguishes partial knowledge from error
+- [ ] No full explanation appears before an attempt unless explicitly requested
+- [ ] Provider and validation failures preserve the session and explain recovery
 
-### Phase 3: Retrieval
+### Phase 3: Adaptive Questioning
 
-- [ ] Task 9: Generate bounded questions from an accepted review
-- [ ] Task 10: Capture learner attempts without prematurely revealing answers
-- [ ] Task 11: Record evidence states and create a revisit queue
+- [ ] Task 9: Implement probe, advance, prerequisite, and hint transition rules
+- [ ] Task 10: Add the graduated help ladder and learner challenge workflow
+- [ ] Task 11: Generate and preserve session summaries with demonstrated evidence and unresolved gaps
 
-### Checkpoint: Retrieval
+### Checkpoint: Adaptive Loop
 
-- [ ] One note can complete the full write, review, answer, and revisit loop
-- [ ] Evaluation language distinguishes uncertainty from error
+- [ ] Strong, partial, mistaken, and ambiguous answers lead to meaningfully different next moves
+- [ ] A complete session reveals useful gaps without becoming a lecture
+- [ ] Model judgments remain provisional and correctable
 
-### Phase 4: Connections
+### Phase 4: Retention and Sources
 
-- [ ] Task 12: Propose concepts and relationships with source evidence
-- [ ] Task 13: Add learner approval for concept and edge changes
-- [ ] Task 14: Render a small understanding map across notes
+- [ ] Task 12: Add an evidence-based revisit queue and delayed-recall checks
+- [ ] Task 13: Accept an optional source and preserve its provenance
+- [ ] Task 14: Ground questions and corrections in that source when present
 
-### Checkpoint: Connections
+### Phase 5: Evidence Graph and Learning Frontier
 
-- [ ] Every graph node and edge has provenance
-- [ ] The learner can reject, edit, and remove proposed organization
+- [ ] Task 15: Derive concept and misconception evidence from preserved attempts
+- [ ] Task 16: Propose prerequisite and related-concept edges with provenance
+- [ ] Task 17: Add topic audits and next-question recommendations
+- [ ] Task 18: Test a small graph view only against concrete learning decisions
 
-### Phase 5: Learning Frontier
+### Checkpoint: Product Validation
 
-- [ ] Task 15: Propose a few next questions from demonstrated gaps
-- [ ] Task 16: Add topic audits and longitudinal progress views
-
-### Checkpoint: MVP Complete
-
-- [ ] Product-spec success criteria are updated from founder validation
 - [ ] Critical flows pass end-to-end tests
+- [ ] Delayed qualitative testing compares ThinkEdge with ordinary explanatory chat
 - [ ] Privacy, security, backup, and distribution reviews are complete
 
 ## Risks and Mitigations
 
-| Risk                                           | Impact | Mitigation                                                                               |
-| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------- |
-| AI creates a false sense of mastery            | High   | Require learner explanations and retrieval evidence before marking understanding         |
-| Review becomes an answer dump                  | High   | Enforce a structured contract, bounded output, and evaluation fixtures                   |
-| Knowledge graph becomes decorative             | Medium | Delay it until multi-note evidence exists and test whether it improves next-step choices |
-| Local data loss                                | High   | Version migrations, transactional writes, backups, export, and interruption tests        |
-| Electron boundary exposes desktop capabilities | High   | Sandboxed renderer, context isolation, narrow preload methods, sender validation         |
-| Scope expands into a general note app          | Medium | Preserve the Not Doing list and ship vertical learning loops                             |
+| Risk                                           | Impact | Mitigation                                                                                           |
+| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| AI creates a false sense of mastery            | High   | Require multiple retrieval or application attempts and show evidence instead of a mastery percentage |
+| Questioning becomes frustrating or aimless     | High   | Use explicit next-move rules, a graduated help ladder, and learner-controlled session exit           |
+| Evaluation is confidently wrong                | High   | Ground judgments in answer excerpts or sources, expose uncertainty, and support learner challenge    |
+| Model becomes an answer-dump chatbot           | High   | Enforce one-question contracts and gate direct explanation behind an explicit request                |
+| Knowledge graph becomes decorative             | Medium | Delay it until longitudinal evidence exists and test it against next-step decisions                  |
+| Local data loss                                | High   | Version migrations, transactional writes, backups, export, and interruption tests                    |
+| Electron boundary exposes desktop capabilities | High   | Sandboxed renderer, context isolation, narrow preload methods, and sender validation                 |
+| Scope expands into a general study suite       | Medium | Preserve the Not Doing list and ship only the next learning loop                                     |
 
 ## Open Questions
 
-- Resolve the product-spec questions before the affected phase begins.
-- Decide distribution channel and signing approach before external alpha testing.
-- Define a small qualitative evaluation set before choosing the first model.
+- Resolve product-spec questions before the affected phase begins.
+- Decide distribution and signing before external alpha testing.
+- Build a small founder-authored evaluation set before choosing the first model.

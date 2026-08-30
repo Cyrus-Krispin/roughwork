@@ -1,4 +1,4 @@
-# Roughwork Task Checklist
+# ThinkEdge Task Checklist
 
 Tasks are dependency-ordered. A task is complete only after its acceptance criteria and verification checks pass.
 
@@ -9,7 +9,7 @@ Tasks are dependency-ordered. A task is complete only after its acceptance crite
 **Acceptance criteria:**
 
 - [x] A minimal React root renders inside a sandboxed Electron window.
-- [x] No database, AI, editor, graph, account, or synchronization code exists.
+- [x] No database, AI, session, graph, account, or synchronization code exists.
 - [x] Standard development and packaging scripts are documented and executable.
 
 **Verification:**
@@ -28,7 +28,7 @@ Tasks are dependency-ordered. A task is complete only after its acceptance crite
 
 ## Task 1: Establish test harnesses
 
-**Description:** Add deterministic unit and Electron smoke-test foundations before behavioral implementation.
+**Description:** Add deterministic domain-test and Electron smoke-test foundations before behavioral implementation.
 
 **Acceptance criteria:**
 
@@ -70,4 +70,4 @@ Tasks are dependency-ordered. A task is complete only after its acceptance crite
 
 ## Future Tasks
 
-Tasks 3-16 are intentionally summarized in `tasks/plan.md`. Expand only the next approved vertical slice into task-sized work after the preceding checkpoint is reviewed.
+Tasks 3-18 are intentionally summarized in `tasks/plan.md`. Expand only the next approved vertical slice into task-sized work after the preceding checkpoint is reviewed.
