@@ -1,6 +1,5 @@
 import type { FormEvent } from 'react';
 import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -79,12 +78,11 @@ export function QuestionView({
         </Typography>
         <Box component="form" onSubmit={submit} sx={{ display: 'grid' }}>
           <TextField
-            label="Your explanation"
+            label="Your answer"
             value={answer}
             onChange={(event) => onAnswerChange(event.target.value)}
-            placeholder="Start with what you believe is happening. It is okay to be incomplete."
             multiline
-            minRows={8}
+            minRows={5}
             disabled={busy}
             autoFocus
             slotProps={{
@@ -105,7 +103,7 @@ export function QuestionView({
               disabled={busy || !answer.trim()}
               sx={{ minHeight: '3rem', width: { xs: '100%', sm: 'auto' } }}
             >
-              {busy ? 'Reviewing…' : 'Review answer'}
+              {busy ? 'Checking…' : 'Check'}
               {!busy && (
                 <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                   →
@@ -133,7 +131,6 @@ export function QuestionView({
             }
             sx={{ mt: 3, bgcolor: '#f3e3dc' }}
           >
-            <AlertTitle>The connection broke, not your work.</AlertTitle>
             {error}
           </Alert>
         )}

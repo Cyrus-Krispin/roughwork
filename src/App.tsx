@@ -136,7 +136,9 @@ export function App() {
     });
   }
 
-  const sessionIsActive = !['idle', 'ended'].includes(session.status);
+  const sessionIsActive = !['idle', 'feedback', 'ended'].includes(
+    session.status,
+  );
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.paper' }}>
@@ -195,13 +197,6 @@ export function App() {
 
       {provider.loading && (
         <Box component="main" sx={centeredStateSx} aria-busy="true">
-          <Typography
-            variant="overline"
-            color="primary.main"
-            sx={{ fontWeight: 750 }}
-          >
-            ThinkEdge
-          </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
             Getting ready…
           </Typography>
@@ -210,15 +205,8 @@ export function App() {
 
       {!provider.loading && !provider.configured && (
         <Box component="main" sx={centeredStateSx}>
-          <Typography
-            variant="overline"
-            color="primary.main"
-            sx={{ fontWeight: 750 }}
-          >
-            Setup
-          </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Add your DeepSeek key.
+            Add your DeepSeek key
           </Typography>
           <Typography
             color="text.secondary"
@@ -253,7 +241,7 @@ export function App() {
               lineHeight: 1.7,
             }}
           >
-            Restart ThinkEdge when you are done.
+            Restart the app.
           </Typography>
         </Box>
       )}
@@ -288,15 +276,8 @@ export function App() {
 
       {session.status === 'error' && !session.currentQuestion && (
         <Box component="main" sx={centeredStateSx} role="alert">
-          <Typography
-            variant="overline"
-            color="error.main"
-            sx={{ fontWeight: 750 }}
-          >
-            Something went wrong
-          </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Couldn't get a question.
+            Couldn't load a question
           </Typography>
           <Typography
             color="text.secondary"
@@ -310,7 +291,7 @@ export function App() {
             onClick={retryRequest}
             sx={{ mt: 3 }}
           >
-            Try again
+            Retry
           </Button>
         </Box>
       )}
@@ -347,15 +328,8 @@ export function App() {
 
       {session.status === 'ended' && (
         <Box component="main" sx={centeredStateSx}>
-          <Typography
-            variant="overline"
-            color="primary.main"
-            sx={{ fontWeight: 750 }}
-          >
-            Done
-          </Typography>
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Session complete.
+            Done
           </Typography>
           <Typography
             color="text.secondary"
@@ -371,7 +345,7 @@ export function App() {
             type="button"
             onClick={() => dispatch({ type: 'restart' })}
           >
-            Start again
+            New topic
           </Button>
         </Box>
       )}

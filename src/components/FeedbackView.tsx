@@ -18,10 +18,10 @@ type FeedbackViewProps = {
 };
 
 const statusLabels: Record<EvaluationResult['status'], string> = {
-  demonstrated: 'Demonstrated',
-  partial: 'Partially demonstrated',
-  misconception: 'Misconception surfaced',
-  uncertain: 'Needs clarification',
+  demonstrated: 'Clear',
+  partial: 'Partly clear',
+  misconception: 'Needs correction',
+  uncertain: 'Not clear yet',
 };
 
 export function FeedbackView({
@@ -91,7 +91,7 @@ export function FeedbackView({
             sx={{ px: 0 }}
           >
             <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>
-              Your answer
+              Review
             </Typography>
           </AccordionSummary>
           <AccordionDetails id="answer-reference-content" sx={{ px: 0, pb: 3 }}>
@@ -188,7 +188,7 @@ export function FeedbackView({
               color="primary.main"
               sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
             >
-              The edge
+              Gap
             </Typography>
             <Typography
               id="edge-heading"
@@ -201,35 +201,14 @@ export function FeedbackView({
           </Box>
         </Box>
 
-        <Box component="section" aria-labelledby="next-heading" sx={{ pt: 6 }}>
-          <Typography
-            variant="overline"
-            color="primary.main"
-            sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
-          >
-            Next
-          </Typography>
-          <Typography
-            id="next-heading"
-            component="h2"
-            variant="h2"
-            sx={{
-              maxWidth: '24ch',
-              mt: 2,
-              mb: 2,
-              fontSize: 'clamp(2rem, 4vw, 3.5rem)',
-              lineHeight: 1.08,
-            }}
-          >
-            {evaluation.nextQuestion}
-          </Typography>
+        <Box sx={{ pt: 4 }}>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            spacing={3}
-            sx={{ mt: 4, alignItems: { xs: 'stretch', sm: 'center' } }}
+            spacing={2}
+            sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
           >
             <Button variant="contained" type="button" onClick={onContinue}>
-              Continue
+              Next question
               <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                 →
               </Box>

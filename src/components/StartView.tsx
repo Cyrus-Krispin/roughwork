@@ -4,11 +4,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-const suggestions = [
-  'How do neural networks learn?',
-  'What does a derivative actually measure?',
-  'Why do database indexes make queries faster?',
-];
+const suggestions = ['Neural networks', 'Derivatives', 'Database indexes'];
 
 type StartViewProps = {
   onStart(topic: string): Promise<void>;
@@ -46,12 +42,12 @@ export function StartView({ onStart }: StartViewProps) {
           component="h1"
           variant="h1"
           sx={{
-            maxWidth: '16ch',
-            fontSize: { xs: '3rem', sm: 'clamp(3.5rem, 7vw, 6rem)' },
+            maxWidth: '18ch',
+            fontSize: { xs: '2.75rem', sm: 'clamp(3rem, 6vw, 4.75rem)' },
             lineHeight: 0.98,
           }}
         >
-          What do you want to understand?
+          What should we learn?
         </Typography>
         <Box component="form" onSubmit={submit} sx={{ mt: { xs: 5, sm: 7 } }}>
           <TextField
@@ -59,7 +55,6 @@ export function StartView({ onStart }: StartViewProps) {
             fullWidth
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
-            placeholder="Type a topic or question"
             autoFocus
             slotProps={{
               input: {
@@ -73,30 +68,17 @@ export function StartView({ onStart }: StartViewProps) {
               htmlInput: { 'aria-label': 'Topic or question' },
             }}
           />
-          <Typography
-            color="text.secondary"
-            sx={{ mt: 1.5, fontSize: '0.72rem', textAlign: 'right' }}
-          >
-            Press Enter
-          </Typography>
         </Box>
         <Box
-          aria-label="Suggested questions"
+          aria-label="Suggested topics"
           sx={{
-            mt: { xs: 6, sm: 9 },
+            mt: { xs: 5, sm: 7 },
             pt: 3,
             borderTop: 1,
             borderColor: 'divider',
           }}
         >
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ fontWeight: 700 }}
-          >
-            Try one
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {suggestions.map((suggestion) => (
               <Button
                 key={suggestion}
