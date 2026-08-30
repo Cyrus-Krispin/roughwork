@@ -4,20 +4,20 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 import { FeedbackView } from './components/FeedbackView';
 import { QuestionView } from './components/QuestionView';
+import { SessionReview } from './components/SessionReview';
 import { StartView } from './components/StartView';
 import { ThinkEdgeMark } from './components/ThinkEdgeMark';
 import {
   initialLearningSession,
   learningSessionReducer,
 } from './learning/session.ts';
+import type { LearningSessionSummary } from './learning/history.ts';
 
 type ProviderState = {
   loading: boolean;
@@ -50,6 +50,11 @@ export function App() {
     learningSessionReducer,
     initialLearningSession,
   );
+  const [recentSessions, setRecentSessions] = useState<
+    LearningSessionSummary[]
+  >([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [localError, setLocalError] = useState('');
   const providerRequestPending = useRef(false);
 
   useEffect(() => {
@@ -73,13 +78,34 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    void window.thinkEdge
+      .listSessions()
+      .then((result) => {
+        if (active && result.ok) setRecentSessions(result.data);
+      })
+      .finally(() => {
+        if (active) setHistoryLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [session.status]);
 
-  async function requestQuestion(topic: string): Promise<void> {
-    const result = await window.thinkEdge.createDiagnosticQuestion({ topic });
+  async function refreshSessions(): Promise<void> {
+    const result = await window.thinkEdge.listSessions();
+    if (result.ok) setRecentSessions(result.data);
+  }
+
+  async function requestSessionStart(topic: string): Promise<void> {
+    const result = await window.thinkEdge.startSession({ topic });
     if (result.ok) {
-      dispatch({ type: 'question_received', question: result.data });
+      dispatch({ type: 'session_started', session: result.data });
+      await refreshSessions();
     } else {
       dispatch({ type: 'request_failed', message: result.error.message });
     }
@@ -99,7 +125,7 @@ export function App() {
   async function startSession(topic: string): Promise<void> {
     await runProviderRequest(async () => {
       dispatch({ type: 'start', topic });
-      await requestQuestion(topic.trim());
+      await requestSessionStart(topic.trim());
     });
   }
 
@@ -107,15 +133,20 @@ export function App() {
     if (!session.answer.trim()) return;
 
     const request = {
-      topic: session.topic,
-      question: session.currentQuestion,
+      sessionId: session.sessionId,
+      questionId: session.questionId,
       answer: session.answer,
     };
     dispatch({ type: 'submit' });
-    const result = await window.thinkEdge.evaluateAttempt(request);
+    const result = await window.thinkEdge.submitAttempt(request);
 
     if (result.ok) {
-      dispatch({ type: 'evaluation_received', evaluation: result.data });
+      dispatch({
+        type: 'evaluation_persisted',
+        session: result.data,
+        submittedQuestionId: request.questionId,
+      });
+      await refreshSessions();
     } else {
       dispatch({ type: 'request_failed', message: result.error.message });
     }
@@ -130,16 +161,55 @@ export function App() {
       const retryStatus = session.retryStatus;
       dispatch({ type: 'retry' });
       if (retryStatus === 'loading_question') {
-        await requestQuestion(session.topic);
+        await requestSessionStart(session.topic);
       } else if (retryStatus === 'evaluating') {
         await requestEvaluation();
       }
     });
   }
 
-  const sessionIsActive = !['idle', 'feedback', 'ended'].includes(
-    session.status,
-  );
+  async function openSession(sessionId: string): Promise<void> {
+    setLocalError('');
+    const result = await window.thinkEdge.getSession({ sessionId });
+    if (result.ok && result.data) {
+      dispatch({ type: 'session_loaded', session: result.data });
+      return;
+    }
+    setLocalError(
+      result.ok ? 'That local session no longer exists.' : result.error.message,
+    );
+    await refreshSessions();
+  }
+
+  async function endSession(): Promise<void> {
+    if (!session.sessionId) return;
+    const result = await window.thinkEdge.endSession({
+      sessionId: session.sessionId,
+    });
+    if (result.ok) {
+      dispatch({ type: 'session_ended', session: result.data });
+      await refreshSessions();
+    } else {
+      setLocalError(result.error.message);
+    }
+  }
+
+  async function deleteSession(sessionId: string): Promise<void> {
+    setLocalError('');
+    const result = await window.thinkEdge.deleteSession({ sessionId });
+    if (!result.ok) setLocalError(result.error.message);
+    await refreshSessions();
+  }
+
+  function returnHome(): void {
+    dispatch({ type: 'restart' });
+    setLocalError('');
+    void refreshSessions();
+  }
+
+  const sessionIsActive =
+    Boolean(session.sessionId) &&
+    !['idle', 'reviewing', 'ended'].includes(session.status);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -158,7 +228,7 @@ export function App() {
         >
           <IconButton
             color="inherit"
-            onClick={() => dispatch({ type: 'restart' })}
+            onClick={returnHome}
             aria-label="Return to ThinkEdge home"
             size="small"
             sx={{ p: 0.75 }}
@@ -170,7 +240,7 @@ export function App() {
               variant="text"
               color="inherit"
               type="button"
-              onClick={() => dispatch({ type: 'end' })}
+              onClick={() => void endSession()}
               sx={{
                 minWidth: 0,
                 p: 0.5,
@@ -192,52 +262,23 @@ export function App() {
         </Box>
       )}
 
-      {!provider.loading && !provider.configured && (
-        <Box component="main" sx={centeredStateSx}>
-          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Add your DeepSeek key
-          </Typography>
-          <Typography
-            color="text.secondary"
-            sx={{ maxWidth: '38rem', mt: 4, lineHeight: 1.7 }}
-          >
-            Add the key to your local <Box component="code">.env</Box> file.
-          </Typography>
-          <Paper
-            variant="outlined"
-            aria-label="Environment configuration"
-            sx={{
-              width: 'min(36rem, 100%)',
-              mt: 3,
-              p: 2.5,
-              bgcolor: 'text.primary',
-              color: '#e9eedf',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: '0.82rem',
-              textAlign: 'left',
-            }}
-          >
-            <Stack spacing={0.75}>
-              <Box component="span">DEEPSEEK_API_KEY=</Box>
-            </Stack>
-          </Paper>
-          <Typography
-            color="text.secondary"
-            sx={{
-              maxWidth: '38rem',
-              mt: 2.5,
-              fontSize: '0.78rem',
-              lineHeight: 1.7,
-            }}
-          >
-            Restart the app.
-          </Typography>
-        </Box>
+      {!provider.loading && session.status === 'idle' && (
+        <>
+          {localError && (
+            <Typography role="alert" color="error" sx={{ px: 3, pt: 2 }}>
+              {localError}
+            </Typography>
+          )}
+          <StartView
+            providerConfigured={provider.configured}
+            sessions={recentSessions}
+            historyLoading={historyLoading}
+            onStart={startSession}
+            onOpenSession={openSession}
+            onDeleteSession={deleteSession}
+          />
+        </>
       )}
-
-      {!provider.loading &&
-        provider.configured &&
-        session.status === 'idle' && <StartView onStart={startSession} />}
 
       {session.status === 'loading_question' && (
         <Box
@@ -311,7 +352,15 @@ export function App() {
           answer={session.answer}
           evaluation={session.evaluation}
           onContinue={() => dispatch({ type: 'continue' })}
-          onEnd={() => dispatch({ type: 'end' })}
+          onEnd={() => void endSession()}
+        />
+      )}
+
+      {session.status === 'reviewing' && (
+        <SessionReview
+          topic={session.topic}
+          turns={session.history}
+          onDone={returnHome}
         />
       )}
 
@@ -329,11 +378,7 @@ export function App() {
               {session.topic}
             </Box>
           </Typography>
-          <Button
-            variant="contained"
-            type="button"
-            onClick={() => dispatch({ type: 'restart' })}
-          >
+          <Button variant="contained" type="button" onClick={returnHome}>
             New topic
           </Button>
         </Box>

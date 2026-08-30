@@ -4,18 +4,33 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
+import type { LearningSessionSummary } from '../learning/history.ts';
+import { SessionHistory } from './SessionHistory';
+
 const suggestions = ['Neural networks', 'Derivatives', 'Database indexes'];
 
 type StartViewProps = {
+  providerConfigured: boolean;
+  sessions: LearningSessionSummary[];
+  historyLoading: boolean;
   onStart(topic: string): Promise<void>;
+  onOpenSession(sessionId: string): Promise<void>;
+  onDeleteSession(sessionId: string): Promise<void>;
 };
 
-export function StartView({ onStart }: StartViewProps) {
+export function StartView({
+  providerConfigured,
+  sessions,
+  historyLoading,
+  onStart,
+  onOpenSession,
+  onDeleteSession,
+}: StartViewProps) {
   const [topic, setTopic] = useState('');
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (topic.trim()) void onStart(topic);
+    if (providerConfigured && topic.trim()) void onStart(topic);
   }
 
   return (
@@ -24,10 +39,10 @@ export function StartView({ onStart }: StartViewProps) {
       sx={{
         display: 'flex',
         minHeight: 'calc(100vh - 4rem)',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         px: { xs: 2.5, sm: 6 },
-        py: 6,
+        py: { xs: 5, sm: 7 },
       }}
     >
       <Box
@@ -56,6 +71,10 @@ export function StartView({ onStart }: StartViewProps) {
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
             autoFocus
+            disabled={!providerConfigured}
+            placeholder={
+              providerConfigured ? '' : 'Add DEEPSEEK_API_KEY, then restart'
+            }
             slotProps={{
               input: {
                 sx: {
@@ -82,6 +101,7 @@ export function StartView({ onStart }: StartViewProps) {
                 variant="text"
                 color="inherit"
                 type="button"
+                disabled={!providerConfigured}
                 onClick={() => void onStart(suggestion)}
                 sx={{ color: 'text.secondary', fontSize: '0.78rem' }}
               >
@@ -90,6 +110,22 @@ export function StartView({ onStart }: StartViewProps) {
             ))}
           </Box>
         </Box>
+        {!providerConfigured && (
+          <Typography
+            role="status"
+            color="text.secondary"
+            sx={{ mt: 3, fontSize: '0.82rem', lineHeight: 1.6 }}
+          >
+            Starting a new session needs a DeepSeek key. Your local history is
+            still available below.
+          </Typography>
+        )}
+        <SessionHistory
+          sessions={sessions}
+          loading={historyLoading}
+          onOpen={onOpenSession}
+          onDelete={onDeleteSession}
+        />
       </Box>
     </Box>
   );

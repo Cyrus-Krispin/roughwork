@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  parseAttemptRequest,
+  parseListSessionsRequest,
+  parseSessionRequest,
+  parseSubmitAttemptRequest,
   parseTopicRequest,
   toPublicLearningError,
 } from '../src/learning/ipc.ts';
@@ -17,14 +19,33 @@ test('rejects an empty topic request', () => {
   assert.throws(() => parseTopicRequest({ topic: '   ' }));
 });
 
-test('accepts a bounded attempt request', () => {
-  const request = {
-    topic: 'Model training',
-    question: 'Why is a loss function necessary?',
-    answer: 'It gives optimization a measurable objective.',
-  };
+test('accepts bounded persisted-session requests', () => {
+  const sessionId = '00000000-0000-4000-8000-000000000001';
+  const questionId = '00000000-0000-4000-8000-000000000002';
 
-  assert.deepEqual(parseAttemptRequest(request), request);
+  assert.deepEqual(parseSessionRequest({ sessionId }), { sessionId });
+  assert.deepEqual(
+    parseSubmitAttemptRequest({
+      sessionId,
+      questionId,
+      answer: '  Evidence  ',
+    }),
+    { sessionId, questionId, answer: '  Evidence  ' },
+  );
+  assert.deepEqual(parseListSessionsRequest({}), { limit: 20 });
+  assert.deepEqual(parseListSessionsRequest({ limit: 7 }), { limit: 7 });
+});
+
+test('rejects unbounded or malformed persisted-session requests', () => {
+  assert.throws(() => parseSessionRequest({ sessionId: 'not-a-uuid' }));
+  assert.throws(() => parseListSessionsRequest({ limit: 1000 }));
+  assert.throws(() =>
+    parseSubmitAttemptRequest({
+      sessionId: '00000000-0000-4000-8000-000000000001',
+      questionId: '00000000-0000-4000-8000-000000000002',
+      answer: '',
+    }),
+  );
 });
 
 test('does not expose provider error details to the renderer', () => {

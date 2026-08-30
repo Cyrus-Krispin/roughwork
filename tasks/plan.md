@@ -172,3 +172,16 @@ After the first real AI session, choose:
 1. **Continue to persistence** if feedback reliably identifies evidence and useful gaps.
 2. **Revise prompts/contracts** if the interaction is promising but inconsistent.
 3. **Reconsider the product mechanism** if AI cannot evaluate the selected domain without frequent confident errors or lectures.
+
+## Phase 2 Implementation: Local Session Persistence
+
+The approved next vertical slice is specified in
+[`docs/local-session-persistence.md`](../docs/local-session-persistence.md).
+
+- [x] Add versioned SQLite migrations and a tested session repository.
+- [x] Move session start, attempt submission, and end transitions behind validated
+      main-process operations.
+- [x] Add recent-session history, resume, inspection, and confirmed deletion.
+- [x] Verify interruption safety, restart recovery, Electron runtime behavior,
+      security checks, and packaging.
+- [x] Record the provenance boundary for later evidence-graph projections.

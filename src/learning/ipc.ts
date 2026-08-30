@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import type { DiagnosticQuestion, EvaluationResult } from './contracts.ts';
+import type {
+  LearningSessionSummary,
+  PersistedLearningSession,
+} from './history.ts';
 
 const topicRequestSchema = z
   .object({
@@ -8,16 +11,30 @@ const topicRequestSchema = z
   })
   .strict();
 
-const attemptRequestSchema = z
+const sessionRequestSchema = z
   .object({
-    topic: z.string().trim().min(2).max(160),
-    question: z.string().trim().min(5).max(140),
+    sessionId: z.uuid(),
+  })
+  .strict();
+
+const submitAttemptRequestSchema = z
+  .object({
+    sessionId: z.uuid(),
+    questionId: z.uuid(),
     answer: z.string().min(1).max(12_000),
   })
   .strict();
 
+const listSessionsRequestSchema = z
+  .object({
+    limit: z.number().int().min(1).max(50).default(20),
+  })
+  .strict();
+
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
-export type AttemptRequest = z.infer<typeof attemptRequestSchema>;
+export type SessionRequest = z.infer<typeof sessionRequestSchema>;
+export type SubmitAttemptRequest = z.infer<typeof submitAttemptRequestSchema>;
+export type ListSessionsRequest = z.infer<typeof listSessionsRequestSchema>;
 
 export type LearningError = {
   code: 'invalid_request' | 'not_configured' | 'provider_failed';
@@ -29,20 +46,40 @@ export type LearningResult<T> =
 
 export type ThinkEdgeApi = {
   getProviderStatus(): Promise<{ configured: boolean; model: string }>;
-  createDiagnosticQuestion(
+  startSession(
     request: TopicRequest,
-  ): Promise<LearningResult<DiagnosticQuestion>>;
-  evaluateAttempt(
-    request: AttemptRequest,
-  ): Promise<LearningResult<EvaluationResult>>;
+  ): Promise<LearningResult<PersistedLearningSession>>;
+  submitAttempt(
+    request: SubmitAttemptRequest,
+  ): Promise<LearningResult<PersistedLearningSession>>;
+  getSession(
+    request: SessionRequest,
+  ): Promise<LearningResult<PersistedLearningSession | null>>;
+  listSessions(
+    request?: Partial<ListSessionsRequest>,
+  ): Promise<LearningResult<LearningSessionSummary[]>>;
+  endSession(
+    request: SessionRequest,
+  ): Promise<LearningResult<PersistedLearningSession>>;
+  deleteSession(request: SessionRequest): Promise<LearningResult<boolean>>;
 };
 
 export function parseTopicRequest(value: unknown): TopicRequest {
   return topicRequestSchema.parse(value);
 }
 
-export function parseAttemptRequest(value: unknown): AttemptRequest {
-  return attemptRequestSchema.parse(value);
+export function parseSessionRequest(value: unknown): SessionRequest {
+  return sessionRequestSchema.parse(value);
+}
+
+export function parseSubmitAttemptRequest(
+  value: unknown,
+): SubmitAttemptRequest {
+  return submitAttemptRequestSchema.parse(value);
+}
+
+export function parseListSessionsRequest(value: unknown): ListSessionsRequest {
+  return listSessionsRequestSchema.parse(value ?? {});
 }
 
 export function toPublicLearningError(error: unknown): LearningError {

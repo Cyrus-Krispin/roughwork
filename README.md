@@ -2,9 +2,10 @@
 
 ThinkEdge is an early-stage, local-first desktop learning partner that finds the edge of a learner's understanding through adaptive Socratic questions. It asks one question at a time, evaluates the learner's own answer, and offers only the smallest useful amount of help.
 
-The current branch contains the first provider-backed learning loop: topic entry,
-an AI diagnostic question, a learner answer, evidence-based AI feedback, and one
-adaptive next question. Sessions are intentionally in memory for this slice.
+The application contains a provider-backed learning loop: topic entry, an AI
+diagnostic question, a learner answer, evidence-based AI feedback, and one
+adaptive next question. Sessions, immutable attempts, and evaluation evidence
+persist locally in SQLite and can be resumed, reviewed, ended, or deleted.
 
 ## Requirements
 
@@ -59,6 +60,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 - [Product specification](docs/product-spec.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
+- [Local session persistence](docs/local-session-persistence.md)
 - [Implementation plan](tasks/plan.md)
 - [Task checklist](tasks/todo.md)
 
@@ -66,7 +68,8 @@ Unsigned development builds are intended only for local use. Code signing and no
 
 - DeepSeek V4 Flash is the only provider and runs in non-thinking mode for the
   first fast, cost-conscious iteration
-- Sessions are in memory and disappear when the app restarts
-- No persistence or knowledge graph
+- Session history is stored locally in Electron's per-user application-data
+  directory and remains available after an app restart
+- No cloud sync, export, automatic backup, or knowledge graph yet
 - No accounts, cloud backend, or synchronization
 - Local secrets remain ignored and are never exposed to the renderer

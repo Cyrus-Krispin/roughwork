@@ -110,3 +110,51 @@ test('does not submit a blank answer', () => {
     'answering',
   );
 });
+
+test('hydrates a persisted active session at its current question', () => {
+  const state = learningSessionReducer(initialLearningSession, {
+    type: 'session_loaded',
+    session: persistedSession('active'),
+  });
+
+  assert.equal(state.status, 'answering');
+  assert.equal(state.sessionId, '00000000-0000-4000-8000-000000000001');
+  assert.equal(state.questionId, '00000000-0000-4000-8000-000000000002');
+  assert.equal(
+    state.currentQuestion,
+    'Why do database indexes speed up reads?',
+  );
+});
+
+test('opens an ended persisted session as read-only history', () => {
+  const state = learningSessionReducer(initialLearningSession, {
+    type: 'session_loaded',
+    session: persistedSession('ended'),
+  });
+
+  assert.equal(state.status, 'reviewing');
+  assert.equal(state.history.length, 1);
+});
+
+function persistedSession(status) {
+  return {
+    id: '00000000-0000-4000-8000-000000000001',
+    topic: 'Database indexes',
+    status,
+    startedAt: '2026-08-30T00:00:00.000Z',
+    updatedAt: '2026-08-30T00:05:00.000Z',
+    endedAt: status === 'ended' ? '2026-08-30T00:05:00.000Z' : null,
+    currentQuestionId: '00000000-0000-4000-8000-000000000002',
+    turns: [
+      {
+        questionId: '00000000-0000-4000-8000-000000000002',
+        turn: 1,
+        question: 'Why do database indexes speed up reads?',
+        intent:
+          'Tests whether the learner understands indexed lookup tradeoffs.',
+        answer: null,
+        evaluation: null,
+      },
+    ],
+  };
+}
