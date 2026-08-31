@@ -43,7 +43,7 @@ test('opens a migrated database with safety pragmas enabled', () => {
     .get();
   const foreignKeys = database.prepare('PRAGMA foreign_keys').get();
 
-  assert.equal(migration.version, 1);
+  assert.equal(migration.version, 2);
   assert.equal(foreignKeys.foreign_keys, 1);
   database.close();
 });
@@ -68,7 +68,82 @@ test('creates and reloads an active session at its current question', () => {
     intent: diagnosticQuestion.intent,
     answer: null,
     evaluation: null,
+    evaluationHistory: [],
+    help: [],
   });
+  database.close();
+});
+
+test('persists ordered help and replays an acknowledged request id', () => {
+  const { database, repository } = createRepository();
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  const input = {
+    requestId: '00000000-0000-4000-8000-000000000090',
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    response: {
+      level: 'hint',
+      content: 'Focus on how the lookup avoids visiting every row.',
+    },
+  };
+
+  const first = repository.recordHelp(input);
+  const retry = repository.recordHelp(input);
+
+  assert.deepEqual(retry, first);
+  assert.equal(first.turns[0].help.length, 1);
+  assert.equal(first.turns[0].help[0].level, 'hint');
+  assert.equal(
+    database.prepare('SELECT COUNT(*) AS count FROM help_requests').get().count,
+    1,
+  );
+  database.close();
+});
+
+test('appends a challenge revision and updates only the unanswered child question', () => {
+  const { database, repository } = createRepository();
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  const evaluated = repository.recordEvaluation({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+    evaluation,
+  });
+  const challengedEvaluationId = evaluated.turns[0].evaluationHistory[0].id;
+  const revised = {
+    ...evaluation,
+    status: 'demonstrated',
+    proposedNextMove: 'advance',
+    nextQuestion: 'How can an index slow down a write?',
+    nextQuestionRationale: 'Advances to the write-side tradeoff.',
+  };
+
+  const saved = repository.recordChallenge({
+    requestId: '00000000-0000-4000-8000-000000000091',
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    evaluationId: challengedEvaluationId,
+    rationale: 'My answer identified the avoided scan.',
+    evaluation: revised,
+  });
+
+  assert.equal(saved.turns[0].evaluation.status, 'demonstrated');
+  assert.equal(saved.turns[0].evaluationHistory.length, 2);
+  assert.equal(
+    saved.turns[0].evaluationHistory[1].challengeRationale,
+    'My answer identified the avoided scan.',
+  );
+  assert.equal(saved.turns[1].question, revised.nextQuestion);
+  assert.equal(
+    saved.turns[0].evaluationHistory[0].evaluation.nextQuestion,
+    evaluation.nextQuestion,
+  );
   database.close();
 });
 

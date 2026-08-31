@@ -4,6 +4,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import type {
   DiagnosticQuestion,
   EvaluationResult,
+  HelpResponse,
 } from '../../learning/contracts.ts';
 import type {
   LearningSessionSummary,
@@ -42,6 +43,12 @@ type TurnRow = {
   next_question_rationale: string | null;
 };
 
+type EvaluationRow = TurnRow & {
+  revision: number;
+  created_at: string;
+  challenge_rationale: string | null;
+};
+
 type SummaryRow = SessionRow & {
   answered_turns: number;
   total_questions: number;
@@ -55,6 +62,22 @@ export type RecordEvaluationInput = {
   sessionId: string;
   questionId: string;
   answer: string;
+  evaluation: EvaluationResult;
+};
+
+export type RecordHelpInput = {
+  requestId: string;
+  sessionId: string;
+  questionId: string;
+  response: HelpResponse;
+};
+
+export type RecordChallengeInput = {
+  requestId: string;
+  sessionId: string;
+  questionId: string;
+  evaluationId: string;
+  rationale: string;
   evaluation: EvaluationResult;
 };
 
@@ -214,6 +237,143 @@ export class LearningSessionRepository {
     return this.requireSession(input.sessionId);
   }
 
+  recordHelp(input: RecordHelpInput): PersistedLearningSession {
+    const acknowledged = this.database
+      .prepare('SELECT session_id FROM help_requests WHERE request_id = ?')
+      .get(input.requestId) as { session_id: string } | undefined;
+    if (acknowledged) return this.requireSession(acknowledged.session_id);
+
+    const session = this.getSessionRow(input.sessionId);
+    if (!session || session.status !== 'active')
+      throw new Error('Learning session is not active.');
+    if (session.current_question_id !== input.questionId)
+      throw new Error('The question is not current for this learning session.');
+    const ordinal =
+      (
+        this.database
+          .prepare(
+            'SELECT COUNT(*) AS count FROM help_requests WHERE question_id = ?',
+          )
+          .get(input.questionId) as { count: number }
+      ).count + 1;
+    this.database
+      .prepare(
+        `INSERT INTO help_requests
+      (id, request_id, session_id, question_id, ordinal, level, content, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        this.createId(),
+        input.requestId,
+        input.sessionId,
+        input.questionId,
+        ordinal,
+        input.response.level,
+        input.response.content,
+        this.now(),
+      );
+    return this.requireSession(input.sessionId);
+  }
+
+  recordChallenge(input: RecordChallengeInput): PersistedLearningSession {
+    const acknowledged = this.database
+      .prepare(
+        'SELECT session_id FROM evaluation_challenges WHERE request_id = ?',
+      )
+      .get(input.requestId) as { session_id: string } | undefined;
+    if (acknowledged) return this.requireSession(acknowledged.session_id);
+    const session = this.getSessionRow(input.sessionId);
+    if (!session || session.status !== 'active')
+      throw new Error('Learning session is not active.');
+    const current = this.database
+      .prepare(
+        `SELECT e.id, e.attempt_id, e.revision
+      FROM evaluations e JOIN attempts a ON a.id = e.attempt_id
+      WHERE a.question_id = ? ORDER BY e.revision DESC LIMIT 1`,
+      )
+      .get(input.questionId) as
+      { id: string; attempt_id: string; revision: number } | undefined;
+    if (!current || current.id !== input.evaluationId)
+      throw new Error('The challenged evaluation is stale.');
+    const child = this.database
+      .prepare(
+        `SELECT id FROM questions
+      WHERE session_id = ? AND parent_evaluation_id = ?`,
+      )
+      .get(input.sessionId, input.evaluationId) as { id: string } | undefined;
+    if (!child || child.id !== session.current_question_id)
+      throw new Error('The next question is no longer available for revision.');
+    const attempted = this.database
+      .prepare('SELECT 1 AS found FROM attempts WHERE question_id = ?')
+      .get(child.id);
+    if (attempted) throw new Error('An attempted question cannot be revised.');
+
+    const evaluationId = this.createId();
+    const challengeId = this.createId();
+    const timestamp = this.now();
+    this.transaction(() => {
+      this.database
+        .prepare(
+          `INSERT INTO evaluations
+        (id, attempt_id, revision, status, uncertainty, proposed_next_move, unresolved_gap, next_question, next_question_rationale, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          evaluationId,
+          current.attempt_id,
+          current.revision + 1,
+          input.evaluation.status,
+          input.evaluation.uncertainty,
+          input.evaluation.proposedNextMove,
+          input.evaluation.unresolvedGap,
+          input.evaluation.nextQuestion,
+          input.evaluation.nextQuestionRationale,
+          timestamp,
+        );
+      const evidenceStatement = this.database
+        .prepare(`INSERT INTO evaluation_evidence
+        (evaluation_id, ordinal, excerpt, finding) VALUES (?, ?, ?, ?)`);
+      input.evaluation.evidence.forEach((item, ordinal) =>
+        evidenceStatement.run(
+          evaluationId,
+          ordinal,
+          item.excerpt,
+          item.finding,
+        ),
+      );
+      this.database
+        .prepare(
+          `INSERT INTO evaluation_challenges
+        (id, request_id, session_id, question_id, challenged_evaluation_id, resulting_evaluation_id, rationale, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          challengeId,
+          input.requestId,
+          input.sessionId,
+          input.questionId,
+          input.evaluationId,
+          evaluationId,
+          input.rationale,
+          timestamp,
+        );
+      this.database
+        .prepare(
+          `UPDATE questions SET prompt = ?, intent = ?, parent_evaluation_id = ? WHERE id = ?`,
+        )
+        .run(
+          input.evaluation.nextQuestion,
+          input.evaluation.nextQuestionRationale,
+          evaluationId,
+          child.id,
+        );
+      this.database
+        .prepare('UPDATE learning_sessions SET updated_at = ? WHERE id = ?')
+        .run(timestamp, input.sessionId);
+    });
+    return this.requireSession(input.sessionId);
+  }
+
   endSession(sessionId: string): PersistedLearningSession {
     const session = this.requireSession(sessionId);
     if (session.status === 'ended') return session;
@@ -349,6 +509,38 @@ export class LearningSessionRepository {
         nextQuestionRationale: row.next_question_rationale!,
       };
     }
+    const evaluationRows = this.database
+      .prepare(
+        `SELECT e.id AS evaluation_id, e.revision, e.status, e.uncertainty,
+      e.proposed_next_move, e.unresolved_gap, e.next_question, e.next_question_rationale, e.created_at,
+      c.rationale AS challenge_rationale
+      FROM attempts a JOIN evaluations e ON e.attempt_id = a.id
+      LEFT JOIN evaluation_challenges c ON c.resulting_evaluation_id = e.id
+      WHERE a.question_id = ? ORDER BY e.revision ASC`,
+      )
+      .all(row.question_id) as EvaluationRow[];
+    const evaluationHistory = evaluationRows.map((item) => ({
+      id: item.evaluation_id!,
+      revision: item.revision,
+      evaluation: this.toEvaluation(item),
+      challengeRationale: item.challenge_rationale,
+      createdAt: item.created_at,
+    }));
+    if (evaluationHistory.length)
+      evaluation = evaluationHistory.at(-1)!.evaluation;
+    const help = this.database
+      .prepare(
+        `SELECT id, request_id, ordinal, level, content, created_at
+      FROM help_requests WHERE question_id = ? ORDER BY ordinal ASC`,
+      )
+      .all(row.question_id) as Array<{
+      id: string;
+      request_id: string;
+      ordinal: number;
+      level: HelpResponse['level'];
+      content: string;
+      created_at: string;
+    }>;
     return {
       questionId: row.question_id,
       turn: row.turn_number,
@@ -356,6 +548,37 @@ export class LearningSessionRepository {
       intent: row.intent,
       answer: row.answer,
       evaluation,
+      evaluationHistory,
+      help: help.map((item) => ({
+        id: item.id,
+        requestId: item.request_id,
+        ordinal: item.ordinal,
+        level: item.level,
+        content: item.content,
+        createdAt: item.created_at,
+      })),
+    };
+  }
+
+  private toEvaluation(row: TurnRow): EvaluationResult {
+    const evidenceRows = this.database
+      .prepare(
+        `SELECT excerpt, finding FROM evaluation_evidence
+      WHERE evaluation_id = ? ORDER BY ordinal ASC`,
+      )
+      .all(row.evaluation_id) as EvaluationResult['evidence'];
+    const evidence = evidenceRows.map((item) => ({
+      excerpt: item.excerpt,
+      finding: item.finding,
+    }));
+    return {
+      status: row.status!,
+      evidence,
+      unresolvedGap: row.unresolved_gap!,
+      uncertainty: row.uncertainty!,
+      proposedNextMove: row.proposed_next_move!,
+      nextQuestion: row.next_question!,
+      nextQuestionRationale: row.next_question_rationale!,
     };
   }
 
