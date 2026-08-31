@@ -8,6 +8,10 @@ const strataAiApi: StrataAiApi = {
     ipcRenderer.invoke('learning:start-session', request),
   submitAttempt: (request) =>
     ipcRenderer.invoke('learning:submit-attempt', request),
+  requestHelp: (request) =>
+    ipcRenderer.invoke('learning:request-help', request),
+  challengeEvaluation: (request) =>
+    ipcRenderer.invoke('learning:challenge-evaluation', request),
   getSession: (request) => ipcRenderer.invoke('learning:get-session', request),
   listSessions: (request = {}) =>
     ipcRenderer.invoke('learning:list-sessions', request),

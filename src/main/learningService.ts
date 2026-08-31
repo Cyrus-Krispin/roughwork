@@ -1,6 +1,8 @@
 import type {
   DiagnosticQuestion,
   EvaluationResult,
+  HelpLevel,
+  HelpResponse,
 } from '../learning/contracts.ts';
 import type {
   LearningSessionSummary,
@@ -15,6 +17,33 @@ type LearningProvider = {
     question: string;
     answer: string;
   }): Promise<EvaluationResult>;
+  createHelpResponse(context: {
+    topic: string;
+    question: string;
+    level: HelpLevel;
+    priorHelp: HelpResponse[];
+  }): Promise<HelpResponse>;
+  reconsiderEvaluation(context: {
+    topic: string;
+    question: string;
+    answer: string;
+    evaluation: EvaluationResult;
+    rationale: string;
+  }): Promise<EvaluationResult>;
+};
+
+type HelpInput = {
+  requestId: string;
+  sessionId: string;
+  questionId: string;
+  level: HelpLevel;
+};
+type ChallengeInput = {
+  requestId: string;
+  sessionId: string;
+  questionId: string;
+  evaluationId: string;
+  rationale: string;
 };
 
 type SubmitAttemptInput = {
@@ -73,6 +102,75 @@ export class LearningService {
       answer: input.answer,
     });
     return this.repository.recordEvaluation({ ...input, evaluation });
+  }
+
+  async requestHelp(input: HelpInput): Promise<PersistedLearningSession> {
+    const acknowledged = this.repository.findSessionByHelpRequest(
+      input.requestId,
+    );
+    if (acknowledged) return acknowledged;
+    const session = this.repository.getSession(input.sessionId);
+    if (
+      !session ||
+      session.status !== 'active' ||
+      session.currentQuestionId !== input.questionId
+    )
+      throw new Error('The question is not current for this learning session.');
+    const turn = session.turns.find(
+      (item) => item.questionId === input.questionId,
+    )!;
+    const levels: HelpLevel[] = [
+      'rephrase',
+      'smaller_question',
+      'hint',
+      'partial_example',
+      'direct_explanation',
+    ];
+    const previous = turn.help.at(-1)?.level;
+    const allowed = previous
+      ? [previous, levels[levels.indexOf(previous) + 1]].filter(Boolean)
+      : ['rephrase'];
+    if (!allowed.includes(input.level))
+      throw new Error('This help level is not available yet.');
+    const response = await this.createProvider().createHelpResponse({
+      topic: session.topic,
+      question: turn.question,
+      level: input.level,
+      priorHelp: turn.help.map(
+        ({ level, content }) => ({ level, content }) as HelpResponse,
+      ),
+    });
+    return this.repository.recordHelp({ ...input, response });
+  }
+
+  async challengeEvaluation(
+    input: ChallengeInput,
+  ): Promise<PersistedLearningSession> {
+    const acknowledged = this.repository.findSessionByChallengeRequest(
+      input.requestId,
+    );
+    if (acknowledged) return acknowledged;
+    const session = this.repository.getSession(input.sessionId);
+    const turn = session?.turns.find(
+      (item) => item.questionId === input.questionId,
+    );
+    const latest = turn?.evaluationHistory.at(-1);
+    if (
+      !session ||
+      session.status !== 'active' ||
+      !turn?.answer ||
+      !latest ||
+      latest.id !== input.evaluationId
+    )
+      throw new Error('The challenged evaluation is stale.');
+    const evaluation = await this.createProvider().reconsiderEvaluation({
+      topic: session.topic,
+      question: turn.question,
+      answer: turn.answer,
+      evaluation: latest.evaluation,
+      rationale: input.rationale,
+    });
+    return this.repository.recordChallenge({ ...input, evaluation });
   }
 
   getSession(sessionId: string): PersistedLearningSession | null {

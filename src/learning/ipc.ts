@@ -4,6 +4,7 @@ import type {
   LearningSessionSummary,
   PersistedLearningSession,
 } from './history.ts';
+import { helpLevels } from './contracts.ts';
 
 const topicRequestSchema = z
   .object({
@@ -31,10 +32,30 @@ const listSessionsRequestSchema = z
   })
   .strict();
 
+const helpRequestSchema = z
+  .object({
+    requestId: z.uuid(),
+    sessionId: z.uuid(),
+    questionId: z.uuid(),
+    level: z.enum(helpLevels),
+  })
+  .strict();
+const challengeRequestSchema = z
+  .object({
+    requestId: z.uuid(),
+    sessionId: z.uuid(),
+    questionId: z.uuid(),
+    evaluationId: z.uuid(),
+    rationale: z.string().trim().min(2).max(1000),
+  })
+  .strict();
+
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
 export type SessionRequest = z.infer<typeof sessionRequestSchema>;
 export type SubmitAttemptRequest = z.infer<typeof submitAttemptRequestSchema>;
 export type ListSessionsRequest = z.infer<typeof listSessionsRequestSchema>;
+export type HelpRequest = z.infer<typeof helpRequestSchema>;
+export type ChallengeRequest = z.infer<typeof challengeRequestSchema>;
 
 export type LearningError = {
   code: 'invalid_request' | 'not_configured' | 'provider_failed';
@@ -51,6 +72,12 @@ export type StrataAiApi = {
   ): Promise<LearningResult<PersistedLearningSession>>;
   submitAttempt(
     request: SubmitAttemptRequest,
+  ): Promise<LearningResult<PersistedLearningSession>>;
+  requestHelp(
+    request: HelpRequest,
+  ): Promise<LearningResult<PersistedLearningSession>>;
+  challengeEvaluation(
+    request: ChallengeRequest,
   ): Promise<LearningResult<PersistedLearningSession>>;
   getSession(
     request: SessionRequest,
@@ -80,6 +107,13 @@ export function parseSubmitAttemptRequest(
 
 export function parseListSessionsRequest(value: unknown): ListSessionsRequest {
   return listSessionsRequestSchema.parse(value ?? {});
+}
+
+export function parseHelpRequest(value: unknown): HelpRequest {
+  return helpRequestSchema.parse(value);
+}
+export function parseChallengeRequest(value: unknown): ChallengeRequest {
+  return challengeRequestSchema.parse(value);
 }
 
 export function toPublicLearningError(error: unknown): LearningError {

@@ -132,6 +132,24 @@ export class LearningSessionRepository {
     return this.requireSession(sessionId);
   }
 
+  findSessionByHelpRequest(requestId: string): PersistedLearningSession | null {
+    const row = this.database
+      .prepare('SELECT session_id FROM help_requests WHERE request_id = ?')
+      .get(requestId) as { session_id: string } | undefined;
+    return row ? this.requireSession(row.session_id) : null;
+  }
+
+  findSessionByChallengeRequest(
+    requestId: string,
+  ): PersistedLearningSession | null {
+    const row = this.database
+      .prepare(
+        'SELECT session_id FROM evaluation_challenges WHERE request_id = ?',
+      )
+      .get(requestId) as { session_id: string } | undefined;
+    return row ? this.requireSession(row.session_id) : null;
+  }
+
   recordEvaluation(input: RecordEvaluationInput): PersistedLearningSession {
     const existing = this.database
       .prepare('SELECT answer FROM attempts WHERE question_id = ?')

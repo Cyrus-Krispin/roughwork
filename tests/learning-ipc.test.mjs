@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   parseListSessionsRequest,
+  parseHelpRequest,
+  parseChallengeRequest,
   parseSessionRequest,
   parseSubmitAttemptRequest,
   parseTopicRequest,
@@ -34,6 +36,22 @@ test('accepts bounded persisted-session requests', () => {
   );
   assert.deepEqual(parseListSessionsRequest({}), { limit: 20 });
   assert.deepEqual(parseListSessionsRequest({ limit: 7 }), { limit: 7 });
+  const requestId = '00000000-0000-4000-8000-000000000003';
+  assert.equal(
+    parseHelpRequest({ requestId, sessionId, questionId, level: 'rephrase' })
+      .level,
+    'rephrase',
+  );
+  assert.equal(
+    parseChallengeRequest({
+      requestId,
+      sessionId,
+      questionId,
+      evaluationId: requestId,
+      rationale: 'The quoted evidence supports my answer.',
+    }).rationale,
+    'The quoted evidence supports my answer.',
+  );
 });
 
 test('rejects unbounded or malformed persisted-session requests', () => {
