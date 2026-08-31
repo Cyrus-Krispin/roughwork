@@ -53,7 +53,6 @@ export const helpLevels = [
   'direct_explanation',
 ] as const;
 
-const helpLevelSchema = z.enum(helpLevels);
 const helpResponseSchema = z.discriminatedUnion('level', [
   z
     .object({ level: z.literal('rephrase'), content: shortQuestionSchema })
@@ -86,7 +85,7 @@ const helpResponseSchema = z.discriminatedUnion('level', [
 
 export type DiagnosticQuestion = z.infer<typeof diagnosticQuestionSchema>;
 export type EvaluationResult = z.infer<typeof evaluationSchema>;
-export type HelpLevel = z.infer<typeof helpLevelSchema>;
+export type HelpLevel = (typeof helpLevels)[number];
 export type HelpResponse = z.infer<typeof helpResponseSchema>;
 
 function parseJsonResponse(content: string): unknown {

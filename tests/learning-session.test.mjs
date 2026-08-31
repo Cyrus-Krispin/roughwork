@@ -136,6 +136,35 @@ test('opens an ended persisted session as read-only history', () => {
   assert.equal(state.history.length, 1);
 });
 
+test('keeps the draft answer when persisted help arrives', () => {
+  const session = persistedSession('active');
+  session.turns[0].help = [
+    {
+      id: 'help-1',
+      requestId: 'request-1',
+      ordinal: 1,
+      level: 'rephrase',
+      content: 'Which structure narrows the rows to inspect?',
+      createdAt: session.updatedAt,
+    },
+  ];
+  const state = {
+    ...initialLearningSession,
+    status: 'answering',
+    answer: 'My draft',
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+  };
+
+  const updated = learningSessionReducer(state, {
+    type: 'help_persisted',
+    session,
+  });
+
+  assert.equal(updated.answer, 'My draft');
+  assert.equal(updated.history[0].help.length, 1);
+});
+
 function persistedSession(status) {
   return {
     id: '00000000-0000-4000-8000-000000000001',
@@ -154,6 +183,8 @@ function persistedSession(status) {
           'Tests whether the learner understands indexed lookup tradeoffs.',
         answer: null,
         evaluation: null,
+        evaluationHistory: [],
+        help: [],
       },
     ],
   };

@@ -4,6 +4,9 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import type { HelpLevel } from '../learning/contracts.ts';
+import type { PersistedHelpResponse } from '../learning/history.ts';
+import { HelpControls } from './HelpControls';
 
 type QuestionViewProps = {
   topic: string;
@@ -16,6 +19,9 @@ type QuestionViewProps = {
   onAnswerChange(answer: string): void;
   onSubmit(): Promise<void>;
   onRetry(): Promise<void>;
+  help: PersistedHelpResponse[];
+  helpBusy: boolean;
+  onRequestHelp(level: HelpLevel): void;
 };
 
 export function QuestionView({
@@ -29,6 +35,9 @@ export function QuestionView({
   onAnswerChange,
   onSubmit,
   onRetry,
+  help,
+  helpBusy,
+  onRequestHelp,
 }: QuestionViewProps) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,6 +119,7 @@ export function QuestionView({
             </Button>
           </Box>
         </Box>
+        <HelpControls help={help} busy={helpBusy} onRequest={onRequestHelp} />
         {error && (
           <Alert
             severity="error"

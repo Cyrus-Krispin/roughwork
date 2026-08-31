@@ -6,6 +6,9 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import { useState } from 'react';
+import type { PersistedEvaluationRevision } from '../learning/history.ts';
 
 type FeedbackViewProps = {
   topic: string;
@@ -15,6 +18,10 @@ type FeedbackViewProps = {
   evaluation: EvaluationResult;
   onContinue(): void;
   onEnd(): void;
+  evaluationHistory: PersistedEvaluationRevision[];
+  challengeBusy: boolean;
+  challengeError: string;
+  onChallenge(rationale: string): void;
 };
 
 const statusLabels: Record<EvaluationResult['status'], string> = {
@@ -32,7 +39,12 @@ export function FeedbackView({
   evaluation,
   onContinue,
   onEnd,
+  evaluationHistory,
+  challengeBusy,
+  challengeError,
+  onChallenge,
 }: FeedbackViewProps) {
+  const [rationale, setRationale] = useState('');
   return (
     <Box
       component="main"
@@ -211,6 +223,40 @@ export function FeedbackView({
               End
             </Button>
           </Stack>
+          <Box component="section" sx={{ mt: 5, maxWidth: '40rem' }}>
+            <Typography component="h2" variant="h2" sx={{ fontSize: '1.2rem' }}>
+              Think this judgment missed something?
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="Why should Strata reconsider?"
+              value={rationale}
+              onChange={(event) => setRationale(event.target.value)}
+              disabled={challengeBusy}
+              sx={{ mt: 2 }}
+            />
+            {challengeError && (
+              <Typography role="alert" color="error" sx={{ mt: 1 }}>
+                {challengeError}
+              </Typography>
+            )}
+            <Button
+              type="button"
+              disabled={challengeBusy || rationale.trim().length < 2}
+              onClick={() => onChallenge(rationale.trim())}
+              sx={{ mt: 1.5 }}
+            >
+              {challengeBusy ? 'Reconsidering…' : 'Challenge evaluation'}
+            </Button>
+            {evaluationHistory.length > 1 && (
+              <Typography color="text.secondary" sx={{ mt: 1 }}>
+                Revision {evaluationHistory.length} · original judgment
+                preserved
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>

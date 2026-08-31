@@ -38,6 +38,12 @@ export type LearningSessionEvent =
       submittedQuestionId: string;
     }
   | { type: 'session_ended'; session: PersistedLearningSession }
+  | { type: 'help_persisted'; session: PersistedLearningSession }
+  | {
+      type: 'challenge_persisted';
+      session: PersistedLearningSession;
+      questionId: string;
+    }
   | { type: 'answer_changed'; answer: string }
   | { type: 'submit' }
   | { type: 'evaluation_received'; evaluation: EvaluationResult }
@@ -142,6 +148,20 @@ export function learningSessionReducer(
         retryStatus: null,
         history: event.session.turns,
       };
+    case 'help_persisted':
+      return { ...state, history: event.session.turns };
+    case 'challenge_persisted': {
+      const turn = event.session.turns.find(
+        (item) => item.questionId === event.questionId,
+      );
+      if (!turn?.evaluation) return state;
+      return {
+        ...state,
+        status: 'feedback',
+        evaluation: turn.evaluation,
+        history: event.session.turns,
+      };
+    }
     case 'answer_changed':
       if (state.status !== 'answering' && state.status !== 'error')
         return state;

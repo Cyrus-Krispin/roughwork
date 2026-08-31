@@ -18,6 +18,7 @@ import {
   learningSessionReducer,
 } from './learning/session.ts';
 import type { LearningSessionSummary } from './learning/history.ts';
+import type { HelpLevel } from './learning/contracts.ts';
 
 type ProviderState = {
   loading: boolean;
@@ -55,6 +56,9 @@ export function App() {
   >([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [localError, setLocalError] = useState('');
+  const [helpBusy, setHelpBusy] = useState(false);
+  const [challengeBusy, setChallengeBusy] = useState(false);
+  const [challengeError, setChallengeError] = useState('');
   const providerRequestPending = useRef(false);
 
   useEffect(() => {
@@ -201,6 +205,54 @@ export function App() {
     await refreshSessions();
   }
 
+  async function requestHelp(level: HelpLevel): Promise<void> {
+    if (
+      level === 'direct_explanation' &&
+      !window.confirm(
+        'Show the direct explanation? This is the final help level.',
+      )
+    )
+      return;
+    setHelpBusy(true);
+    setLocalError('');
+    const result = await window.strataAi.requestHelp({
+      requestId: crypto.randomUUID(),
+      sessionId: session.sessionId,
+      questionId: session.questionId,
+      level,
+    });
+    if (result.ok) {
+      dispatch({ type: 'help_persisted', session: result.data });
+      setLocalError('');
+    } else setLocalError(result.error.message);
+    setHelpBusy(false);
+  }
+
+  async function challengeEvaluation(rationale: string): Promise<void> {
+    const turn = session.history.find(
+      (item) => item.questionId === session.questionId,
+    );
+    const evaluationId = turn?.evaluationHistory.at(-1)?.id;
+    if (!evaluationId) return;
+    setChallengeBusy(true);
+    setChallengeError('');
+    const result = await window.strataAi.challengeEvaluation({
+      requestId: crypto.randomUUID(),
+      sessionId: session.sessionId,
+      questionId: session.questionId,
+      evaluationId,
+      rationale,
+    });
+    if (result.ok)
+      dispatch({
+        type: 'challenge_persisted',
+        session: result.data,
+        questionId: session.questionId,
+      });
+    else setChallengeError(result.error.message);
+    setChallengeBusy(false);
+  }
+
   function returnHome(): void {
     dispatch({ type: 'restart' });
     setLocalError('');
@@ -334,13 +386,23 @@ export function App() {
           question={session.currentQuestion}
           answer={session.answer}
           busy={session.status === 'evaluating'}
-          error={session.status === 'error' ? session.errorMessage : ''}
+          error={
+            localError ||
+            (session.status === 'error' ? session.errorMessage : '')
+          }
           canRetry={session.status === 'error'}
           onAnswerChange={(answer) =>
             dispatch({ type: 'answer_changed', answer })
           }
           onSubmit={evaluateAnswer}
           onRetry={retryRequest}
+          help={
+            session.history.find(
+              (item) => item.questionId === session.questionId,
+            )?.help ?? []
+          }
+          helpBusy={helpBusy}
+          onRequestHelp={(level) => void requestHelp(level)}
         />
       )}
 
@@ -353,6 +415,14 @@ export function App() {
           evaluation={session.evaluation}
           onContinue={() => dispatch({ type: 'continue' })}
           onEnd={() => void endSession()}
+          evaluationHistory={
+            session.history.find(
+              (item) => item.questionId === session.questionId,
+            )?.evaluationHistory ?? []
+          }
+          challengeBusy={challengeBusy}
+          challengeError={challengeError}
+          onChallenge={(rationale) => void challengeEvaluation(rationale)}
         />
       )}
 
