@@ -21,6 +21,7 @@ import {
 import type { LearningSessionSummary } from './learning/history.ts';
 import type { HelpLevel } from './learning/contracts.ts';
 import type { LearningError, ProviderStatus } from './learning/ipc.ts';
+import { deleteLocalSession } from './learning/historyOperations.ts';
 
 type ProviderState = ProviderStatus & {
   loading: boolean;
@@ -60,6 +61,7 @@ export function App() {
     LearningSessionSummary[]
   >([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState('');
   const [localError, setLocalError] = useState('');
   const [providerBusy, setProviderBusy] = useState(false);
   const [providerError, setProviderError] = useState('');
@@ -109,7 +111,22 @@ export function App() {
     void window.strataAi
       .listSessions()
       .then((result) => {
-        if (active && result.ok) setRecentSessions(result.data);
+        if (!active) return;
+        if (result.ok) {
+          setRecentSessions(result.data);
+          setHistoryError('');
+        } else {
+          setHistoryError(
+            "Couldn't load current local history. Retry to show the latest saved sessions.",
+          );
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setHistoryError(
+            "Couldn't load current local history. Retry to show the latest saved sessions.",
+          );
+        }
       })
       .finally(() => {
         if (active) setHistoryLoading(false);
@@ -124,8 +141,24 @@ export function App() {
   }, [session.status]);
 
   async function refreshSessions(): Promise<void> {
-    const result = await window.strataAi.listSessions();
-    if (result.ok) setRecentSessions(result.data);
+    setHistoryLoading(true);
+    try {
+      const result = await window.strataAi.listSessions();
+      if (result.ok) {
+        setRecentSessions(result.data);
+        setHistoryError('');
+      } else {
+        setHistoryError(
+          "Couldn't load current local history. Retry to show the latest saved sessions.",
+        );
+      }
+    } catch {
+      setHistoryError(
+        "Couldn't load current local history. Retry to show the latest saved sessions.",
+      );
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   async function requestSessionStart(topic: string): Promise<void> {
@@ -311,11 +344,19 @@ export function App() {
     setContinueBusy(false);
   }
 
-  async function deleteSession(sessionId: string): Promise<void> {
+  async function deleteSession(sessionId: string): Promise<boolean> {
     setLocalError('');
-    const result = await window.strataAi.deleteSession({ sessionId });
-    if (!result.ok) setLocalError(result.error.message);
-    await refreshSessions();
+    const outcome = await deleteLocalSession(window.strataAi, sessionId);
+    if (outcome !== 'failed') {
+      setRecentSessions((sessions) =>
+        sessions.filter((session) => session.id !== sessionId),
+      );
+      await refreshSessions();
+      return true;
+    } else {
+      setLocalError("Couldn't delete that local session. Please try again.");
+      return false;
+    }
   }
 
   async function requestHelp(level: HelpLevel): Promise<void> {
@@ -521,8 +562,10 @@ export function App() {
               learningEnabled={learningEnabled}
               sessions={recentSessions}
               historyLoading={historyLoading}
+              historyError={historyError}
               onStart={startSession}
               onOpenSession={openSession}
+              onRetryHistory={refreshSessions}
               onDeleteSession={deleteSession}
               onSaveProviderCredential={saveProviderCredential}
               onRemoveProviderCredential={removeProviderCredential}

@@ -18,9 +18,11 @@ type StartViewProps = {
   learningEnabled: boolean;
   sessions: LearningSessionSummary[];
   historyLoading: boolean;
+  historyError: string;
   onStart(topic: string): Promise<void>;
   onOpenSession(sessionId: string): Promise<void>;
-  onDeleteSession(sessionId: string): Promise<void>;
+  onRetryHistory(): Promise<void>;
+  onDeleteSession(sessionId: string): Promise<boolean>;
   onSaveProviderCredential(apiKey: string): Promise<boolean>;
   onRemoveProviderCredential(): Promise<boolean>;
   onOpenDeepSeekKeys(): Promise<void>;
@@ -34,8 +36,10 @@ export function StartView({
   learningEnabled,
   sessions,
   historyLoading,
+  historyError,
   onStart,
   onOpenSession,
+  onRetryHistory,
   onDeleteSession,
   onSaveProviderCredential,
   onRemoveProviderCredential,
@@ -176,8 +180,10 @@ export function StartView({
         <SessionHistory
           sessions={sessions}
           loading={historyLoading}
+          error={historyError}
           onOpen={onOpenSession}
           onDelete={onDeleteSession}
+          onRetry={onRetryHistory}
         />
       </Box>
     </Box>
