@@ -105,7 +105,7 @@ const migrations = [
   },
 ] as const;
 
-function migrate(database: DatabaseSync): void {
+export function migrateLearningDatabase(database: DatabaseSync): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version INTEGER PRIMARY KEY,
@@ -144,6 +144,6 @@ export function openLearningDatabase(path: string): DatabaseSync {
   database.exec('PRAGMA busy_timeout = 5000');
   database.exec('PRAGMA synchronous = NORMAL');
   if (path !== ':memory:') database.exec('PRAGMA journal_mode = WAL');
-  migrate(database);
+  migrateLearningDatabase(database);
   return database;
 }

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
 
-import { openLearningDatabase } from '../src/main/persistence/database.ts';
+import {
+  migrateLearningDatabase,
+  openLearningDatabase,
+} from '../src/main/persistence/database.ts';
 import { LearningSessionRepository } from '../src/main/persistence/sessionRepository.ts';
 
 const diagnosticQuestion = {
@@ -45,6 +49,44 @@ test('opens a migrated database with safety pragmas enabled', () => {
 
   assert.equal(migration.version, 2);
   assert.equal(foreignKeys.foreign_keys, 1);
+  database.close();
+});
+
+test('migrates a version-1 database without rewriting existing sessions', () => {
+  const database = new DatabaseSync(':memory:');
+  database.exec(`
+    CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL) STRICT;
+    INSERT INTO schema_migrations VALUES (1, '2026-08-30T00:00:00.000Z');
+    CREATE TABLE learning_sessions (id TEXT PRIMARY KEY) STRICT;
+    CREATE TABLE questions (id TEXT PRIMARY KEY) STRICT;
+    CREATE TABLE evaluations (id TEXT PRIMARY KEY) STRICT;
+    INSERT INTO learning_sessions VALUES ('existing-session');
+  `);
+
+  migrateLearningDatabase(database);
+
+  assert.equal(
+    database
+      .prepare('SELECT MAX(version) AS version FROM schema_migrations')
+      .get().version,
+    2,
+  );
+  assert.equal(
+    database.prepare('SELECT id FROM learning_sessions').get().id,
+    'existing-session',
+  );
+  assert.ok(
+    database
+      .prepare("SELECT name FROM sqlite_master WHERE name = 'help_requests'")
+      .get(),
+  );
+  assert.ok(
+    database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE name = 'evaluation_challenges'",
+      )
+      .get(),
+  );
   database.close();
 });
 
