@@ -61,6 +61,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Local session persistence](docs/local-session-persistence.md)
+- [Proposed adaptive learning controls](docs/adaptive-learning-controls.md)
 - [Implementation plan](tasks/plan.md)
 - [Task checklist](tasks/todo.md)
 
