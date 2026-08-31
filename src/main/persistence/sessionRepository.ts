@@ -12,6 +12,10 @@ import type {
   PersistedSessionStatus,
   PersistedTurn,
 } from '../../learning/history.ts';
+import {
+  toLocalDataSession,
+  type LocalDataSession,
+} from '../../learning/localData.ts';
 
 type RepositoryOptions = {
   createId?: () => string;
@@ -26,6 +30,7 @@ type SessionRow = {
   updated_at: string;
   ended_at: string | null;
   current_question_id: string;
+  pending_feedback_question_id: string | null;
 };
 
 type TurnRow = {
@@ -167,6 +172,9 @@ export class LearningSessionRepository {
     if (!session) throw new Error('Learning session not found.');
     if (session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id) {
+      throw new Error('Feedback must be acknowledged before continuing.');
+    }
     if (session.current_question_id !== input.questionId) {
       throw new Error('The question is not current for this learning session.');
     }
@@ -246,10 +254,11 @@ export class LearningSessionRepository {
       this.database
         .prepare(
           `UPDATE learning_sessions
-           SET current_question_id = ?, updated_at = ?
+           SET current_question_id = ?, pending_feedback_question_id = ?,
+               updated_at = ?
            WHERE id = ?`,
         )
-        .run(nextQuestionId, timestamp, input.sessionId);
+        .run(nextQuestionId, input.questionId, timestamp, input.sessionId);
     });
 
     return this.requireSession(input.sessionId);
@@ -264,6 +273,8 @@ export class LearningSessionRepository {
     const session = this.getSessionRow(input.sessionId);
     if (!session || session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id)
+      throw new Error('Feedback must be acknowledged before continuing.');
     if (session.current_question_id !== input.questionId)
       throw new Error('The question is not current for this learning session.');
     const ordinal =
@@ -303,6 +314,8 @@ export class LearningSessionRepository {
     const session = this.getSessionRow(input.sessionId);
     if (!session || session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id !== input.questionId)
+      throw new Error('The challenged evaluation is no longer current.');
     const current = this.database
       .prepare(
         `SELECT e.id, e.attempt_id, e.revision
@@ -399,10 +412,32 @@ export class LearningSessionRepository {
     this.database
       .prepare(
         `UPDATE learning_sessions
-         SET status = 'ended', updated_at = ?, ended_at = ?
+         SET status = 'ended', pending_feedback_question_id = NULL,
+             updated_at = ?, ended_at = ?
          WHERE id = ?`,
       )
       .run(timestamp, timestamp, sessionId);
+    return this.requireSession(sessionId);
+  }
+
+  acknowledgeFeedback(
+    sessionId: string,
+    questionId: string,
+  ): PersistedLearningSession {
+    const session = this.requireSession(sessionId);
+    if (session.status !== 'active')
+      throw new Error('Learning session is not active.');
+    if (!session.pendingFeedbackQuestionId) return session;
+    if (session.pendingFeedbackQuestionId !== questionId)
+      throw new Error('This feedback is no longer awaiting acknowledgement.');
+
+    this.database
+      .prepare(
+        `UPDATE learning_sessions
+         SET pending_feedback_question_id = NULL, updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(this.now(), sessionId);
     return this.requireSession(sessionId);
   }
 
@@ -418,7 +453,13 @@ export class LearningSessionRepository {
                 e.next_question_rationale
          FROM questions q
          LEFT JOIN attempts a ON a.question_id = q.id
-         LEFT JOIN evaluations e ON e.attempt_id = a.id AND e.revision = 1
+         LEFT JOIN evaluations e ON e.id = (
+           SELECT latest.id
+           FROM evaluations latest
+           WHERE latest.attempt_id = a.id
+           ORDER BY latest.revision DESC
+           LIMIT 1
+         )
          WHERE q.session_id = ?
          ORDER BY q.turn_number ASC`,
       )
@@ -432,6 +473,10 @@ export class LearningSessionRepository {
       updatedAt: session.updated_at,
       endedAt: session.ended_at,
       currentQuestionId: session.current_question_id,
+      pendingFeedbackQuestionId:
+        session.status === 'active'
+          ? session.pending_feedback_question_id
+          : null,
       turns: rows.map((row) => this.toTurn(row)),
     };
   }
@@ -454,7 +499,13 @@ export class LearningSessionRepository {
          FROM learning_sessions s
          LEFT JOIN questions q ON q.session_id = s.id
          LEFT JOIN attempts a ON a.question_id = q.id
-         LEFT JOIN evaluations e ON e.attempt_id = a.id AND e.revision = 1
+         LEFT JOIN evaluations e ON e.id = (
+           SELECT latest.id
+           FROM evaluations latest
+           WHERE latest.attempt_id = a.id
+           ORDER BY latest.revision DESC
+           LIMIT 1
+         )
          GROUP BY s.id
          ORDER BY s.updated_at DESC, s.started_at DESC
          LIMIT ?`,
@@ -479,6 +530,43 @@ export class LearningSessionRepository {
     }));
   }
 
+  listAllSessions(): PersistedLearningSession[] {
+    const rows = this.database
+      .prepare(
+        `SELECT id FROM learning_sessions
+         ORDER BY updated_at DESC, started_at DESC`,
+      )
+      .all() as Array<{ id: string }>;
+    return rows.map((row) => this.requireSession(row.id));
+  }
+
+  importSessions(sessions: LocalDataSession[]): {
+    imported: number;
+    skipped: number;
+  } {
+    const pending: LocalDataSession[] = [];
+    let skipped = 0;
+    for (const session of sessions) {
+      const existing = this.getSession(session.id);
+      if (!existing) {
+        pending.push(session);
+      } else if (
+        JSON.stringify(toLocalDataSession(existing)) === JSON.stringify(session)
+      ) {
+        skipped += 1;
+      } else {
+        throw new Error(
+          'A session in this backup conflicts with current local history.',
+        );
+      }
+    }
+
+    this.transaction(() => {
+      pending.forEach((session) => this.insertImportedSession(session));
+    });
+    return { imported: pending.length, skipped };
+  }
+
   deleteSession(sessionId: string): boolean {
     const result = this.database
       .prepare('DELETE FROM learning_sessions WHERE id = ?')
@@ -491,11 +579,154 @@ export class LearningSessionRepository {
       (this.database
         .prepare(
           `SELECT id, topic, status, started_at, updated_at, ended_at,
-                  current_question_id
+                  current_question_id, pending_feedback_question_id
            FROM learning_sessions WHERE id = ?`,
         )
         .get(sessionId) as SessionRow | undefined) ?? null
     );
+  }
+
+  private insertImportedSession(session: LocalDataSession): void {
+    this.database
+      .prepare(
+        `INSERT INTO learning_sessions
+          (id, topic, status, current_question_id, pending_feedback_question_id,
+           started_at, updated_at, ended_at)
+         VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)`,
+      )
+      .run(
+        session.id,
+        session.topic,
+        session.status,
+        session.startedAt,
+        session.updatedAt,
+        session.endedAt,
+      );
+
+    const questionInsert = this.database.prepare(
+      `INSERT INTO questions
+        (id, session_id, turn_number, prompt, intent, parent_evaluation_id, created_at)
+       VALUES (?, ?, ?, ?, ?, NULL, ?)`,
+    );
+    session.turns.forEach((turn, index) => {
+      const previous = session.turns[index - 1];
+      const createdAt =
+        previous?.evaluationHistory.at(-1)?.createdAt ?? session.startedAt;
+      questionInsert.run(
+        turn.questionId,
+        session.id,
+        turn.turn,
+        turn.question,
+        turn.intent,
+        createdAt,
+      );
+    });
+
+    for (const turn of session.turns) {
+      for (const help of turn.help) {
+        this.database
+          .prepare(
+            `INSERT INTO help_requests
+              (id, request_id, session_id, question_id, ordinal, level, content, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            help.id,
+            this.createId(),
+            session.id,
+            turn.questionId,
+            help.ordinal,
+            help.level,
+            help.content,
+            help.createdAt,
+          );
+      }
+      if (!turn.answer) continue;
+
+      const attemptId = this.createId();
+      this.database
+        .prepare(
+          `INSERT INTO attempts
+            (id, session_id, question_id, answer, submitted_at)
+           VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(
+          attemptId,
+          session.id,
+          turn.questionId,
+          turn.answer,
+          turn.evaluationHistory[0]!.createdAt,
+        );
+      for (const revision of turn.evaluationHistory) {
+        const evaluation = revision.evaluation;
+        this.database
+          .prepare(
+            `INSERT INTO evaluations
+              (id, attempt_id, revision, status, uncertainty, proposed_next_move,
+               unresolved_gap, next_question, next_question_rationale, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            revision.id,
+            attemptId,
+            revision.revision,
+            evaluation.status,
+            evaluation.uncertainty,
+            evaluation.proposedNextMove,
+            evaluation.unresolvedGap,
+            evaluation.nextQuestion,
+            evaluation.nextQuestionRationale,
+            revision.createdAt,
+          );
+        const evidenceInsert = this.database.prepare(
+          `INSERT INTO evaluation_evidence
+            (evaluation_id, ordinal, excerpt, finding) VALUES (?, ?, ?, ?)`,
+        );
+        evaluation.evidence.forEach((item, ordinal) =>
+          evidenceInsert.run(revision.id, ordinal, item.excerpt, item.finding),
+        );
+        if (revision.revision > 1) {
+          const previous = turn.evaluationHistory[revision.revision - 2]!;
+          this.database
+            .prepare(
+              `INSERT INTO evaluation_challenges
+                (id, request_id, session_id, question_id,
+                 challenged_evaluation_id, resulting_evaluation_id, rationale, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              this.createId(),
+              this.createId(),
+              session.id,
+              turn.questionId,
+              previous.id,
+              revision.id,
+              revision.challengeRationale,
+              revision.createdAt,
+            );
+        }
+      }
+    }
+
+    session.turns.slice(1).forEach((turn, index) => {
+      const parent = session.turns[index]!.evaluationHistory.at(-1);
+      if (parent) {
+        this.database
+          .prepare('UPDATE questions SET parent_evaluation_id = ? WHERE id = ?')
+          .run(parent.id, turn.questionId);
+      }
+    });
+    this.database
+      .prepare(
+        `UPDATE learning_sessions
+         SET current_question_id = ?, pending_feedback_question_id = ?
+         WHERE id = ?`,
+      )
+      .run(
+        session.currentQuestionId,
+        session.pendingFeedbackQuestionId,
+        session.id,
+      );
   }
 
   private requireSession(sessionId: string): PersistedLearningSession {

@@ -1,36 +1,78 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import type { LearningSessionSummary } from '../learning/history.ts';
+import type { ProviderStatus } from '../learning/ipc.ts';
+import type {
+  ExportLearningDataResult,
+  LocalDataOperationResult,
+  RestoreLearningDataResult,
+} from '../learning/localData.ts';
+import { LocalDataSection } from './LocalDataSection';
+import { ProviderSettings } from './ProviderSettings';
 import { SessionHistory } from './SessionHistory';
 
 const suggestions = ['Neural networks', 'Derivatives', 'Database indexes'];
 
 type StartViewProps = {
-  providerConfigured: boolean;
+  provider: ProviderStatus;
+  providerBusy: boolean;
+  providerError: string;
+  learningEnabled: boolean;
   sessions: LearningSessionSummary[];
   historyLoading: boolean;
+  historyError: string;
   onStart(topic: string): Promise<void>;
   onOpenSession(sessionId: string): Promise<void>;
-  onDeleteSession(sessionId: string): Promise<void>;
+  onRetryHistory(): Promise<void>;
+  onDeleteSession(sessionId: string): Promise<boolean>;
+  onSaveProviderCredential(apiKey: string): Promise<boolean>;
+  onRemoveProviderCredential(): Promise<boolean>;
+  onOpenDeepSeekKeys(): Promise<void>;
+  onExportLearningData(): Promise<
+    LocalDataOperationResult<ExportLearningDataResult>
+  >;
+  onRestoreLearningData(): Promise<
+    LocalDataOperationResult<RestoreLearningDataResult>
+  >;
+  providerSettingsInitiallyExpanded?: boolean;
 };
 
 export function StartView({
-  providerConfigured,
+  provider,
+  providerBusy,
+  providerError,
+  learningEnabled,
   sessions,
   historyLoading,
+  historyError,
   onStart,
   onOpenSession,
+  onRetryHistory,
   onDeleteSession,
+  onSaveProviderCredential,
+  onRemoveProviderCredential,
+  onOpenDeepSeekKeys,
+  onExportLearningData,
+  onRestoreLearningData,
+  providerSettingsInitiallyExpanded = false,
 }: StartViewProps) {
   const [topic, setTopic] = useState('');
+  const topicInputRef = useRef<HTMLInputElement>(null);
+  const [providerSettingsExpanded, setProviderSettingsExpanded] = useState(
+    !provider.configured || providerSettingsInitiallyExpanded,
+  );
+
+  useEffect(() => {
+    if (learningEnabled) topicInputRef.current?.focus();
+  }, [learningEnabled]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (providerConfigured && topic.trim()) void onStart(topic);
+    if (learningEnabled && topic.trim().length >= 2) void onStart(topic);
   }
 
   return (
@@ -62,18 +104,35 @@ export function StartView({
             lineHeight: 0.98,
           }}
         >
-          What should we learn?
+          {learningEnabled
+            ? 'What should we learn?'
+            : 'First, connect DeepSeek.'}
         </Typography>
+        {!learningEnabled && (
+          <ProviderSettings
+            provider={provider}
+            busy={providerBusy}
+            error={providerError}
+            expanded
+            onExpandedChange={setProviderSettingsExpanded}
+            onSave={onSaveProviderCredential}
+            onRemove={onRemoveProviderCredential}
+            onOpenDeepSeekKeys={onOpenDeepSeekKeys}
+          />
+        )}
         <Box component="form" onSubmit={submit} sx={{ mt: { xs: 5, sm: 7 } }}>
           <TextField
             variant="standard"
             fullWidth
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
-            autoFocus
-            disabled={!providerConfigured}
+            autoFocus={learningEnabled}
+            inputRef={topicInputRef}
+            disabled={!learningEnabled || providerBusy}
             placeholder={
-              providerConfigured ? '' : 'Add DEEPSEEK_API_KEY, then restart'
+              learningEnabled
+                ? 'A topic or question'
+                : 'Connect a provider to begin'
             }
             slotProps={{
               input: {
@@ -84,9 +143,19 @@ export function StartView({
                   pb: 1.5,
                 },
               },
-              htmlInput: { 'aria-label': 'Topic or question' },
+              htmlInput: { 'aria-label': 'Topic or question', maxLength: 160 },
             }}
           />
+          <Button
+            variant="contained"
+            type="submit"
+            disabled={
+              !learningEnabled || providerBusy || topic.trim().length < 2
+            }
+            sx={{ mt: 3 }}
+          >
+            Start session · uses AI
+          </Button>
         </Box>
         <Box
           aria-label="Suggested topics"
@@ -101,8 +170,11 @@ export function StartView({
                 variant="text"
                 color="inherit"
                 type="button"
-                disabled={!providerConfigured}
-                onClick={() => void onStart(suggestion)}
+                disabled={!learningEnabled || providerBusy}
+                onClick={() => {
+                  setTopic(suggestion);
+                  topicInputRef.current?.focus();
+                }}
                 sx={{ color: 'text.secondary', fontSize: '0.78rem' }}
               >
                 {suggestion}
@@ -110,21 +182,29 @@ export function StartView({
             ))}
           </Box>
         </Box>
-        {!providerConfigured && (
-          <Typography
-            role="status"
-            color="text.secondary"
-            sx={{ mt: 3, fontSize: '0.82rem', lineHeight: 1.6 }}
-          >
-            Starting a new session needs a DeepSeek key. Your local history is
-            still available below.
-          </Typography>
+        {learningEnabled && (
+          <ProviderSettings
+            provider={provider}
+            busy={providerBusy}
+            error={providerError}
+            expanded={providerSettingsExpanded}
+            onExpandedChange={setProviderSettingsExpanded}
+            onSave={onSaveProviderCredential}
+            onRemove={onRemoveProviderCredential}
+            onOpenDeepSeekKeys={onOpenDeepSeekKeys}
+          />
         )}
         <SessionHistory
           sessions={sessions}
           loading={historyLoading}
+          error={historyError}
           onOpen={onOpenSession}
           onDelete={onDeleteSession}
+          onRetry={onRetryHistory}
+        />
+        <LocalDataSection
+          onExport={onExportLearningData}
+          onRestore={onRestoreLearningData}
         />
       </Box>
     </Box>

@@ -7,8 +7,12 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PersistedEvaluationRevision } from '../learning/history.ts';
+import {
+  evaluationStatusLabel,
+  presentEvaluationRevisions,
+} from '../learning/presentation.ts';
 
 type FeedbackViewProps = {
   topic: string;
@@ -17,18 +21,22 @@ type FeedbackViewProps = {
   answer: string;
   evaluation: EvaluationResult;
   onContinue(): void;
+  continueBusy: boolean;
+  continueError: string;
   onEnd(): void;
+  endError: string;
+  aiAvailable: boolean;
   evaluationHistory: PersistedEvaluationRevision[];
   challengeBusy: boolean;
   challengeError: string;
   onChallenge(rationale: string): void;
 };
 
-const statusLabels: Record<EvaluationResult['status'], string> = {
-  demonstrated: 'Clear',
-  partial: 'Partly clear',
-  misconception: 'Needs correction',
-  uncertain: 'Not clear yet',
+const nextMoveLabels: Record<EvaluationResult['proposedNextMove'], string> = {
+  probe: 'Probe this gap',
+  advance: 'Advance to the next idea',
+  prerequisite: 'Revisit a prerequisite',
+  hint: 'Offer more support',
 };
 
 export function FeedbackView({
@@ -38,13 +46,33 @@ export function FeedbackView({
   answer,
   evaluation,
   onContinue,
+  continueBusy,
+  continueError,
   onEnd,
+  endError,
+  aiAvailable,
   evaluationHistory,
   challengeBusy,
   challengeError,
   onChallenge,
 }: FeedbackViewProps) {
   const [rationale, setRationale] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousRevisionCount = useRef(evaluationHistory.length);
+  const presentedRevisions = presentEvaluationRevisions(evaluationHistory);
+  const challengeLimitReached = evaluationHistory.length >= 3;
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    setRationale('');
+    if (evaluationHistory.length > previousRevisionCount.current) {
+      headingRef.current?.focus();
+    }
+    previousRevisionCount.current = evaluationHistory.length;
+  }, [evaluationHistory.length]);
   return (
     <Box
       component="main"
@@ -78,9 +106,11 @@ export function FeedbackView({
             id="feedback-heading"
             component="h1"
             variant="h1"
+            ref={headingRef}
+            tabIndex={-1}
             sx={{ mt: 1.5, fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}
           >
-            {statusLabels[evaluation.status]}
+            Provisional evaluation: {evaluationStatusLabel(evaluation.status)}
           </Typography>
         </Box>
 
@@ -199,8 +229,118 @@ export function FeedbackView({
             >
               {evaluation.unresolvedGap}
             </Typography>
+            <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              Evaluation uncertainty: {evaluation.uncertainty}
+            </Typography>
           </Box>
         </Box>
+
+        <Box
+          component="section"
+          aria-labelledby="next-move-heading"
+          sx={{ py: 4, borderTop: 1, borderColor: 'divider' }}
+        >
+          <Typography
+            variant="overline"
+            color="primary.main"
+            sx={{ fontWeight: 750, letterSpacing: '0.16em' }}
+          >
+            {nextMoveLabels[evaluation.proposedNextMove]}
+          </Typography>
+          <Typography
+            id="next-move-heading"
+            component="h2"
+            variant="h2"
+            sx={{ mt: 1.5, fontSize: '1.65rem', lineHeight: 1.35 }}
+          >
+            {evaluation.nextQuestion}
+          </Typography>
+          <Typography
+            color="text.secondary"
+            sx={{ mt: 1.25, maxWidth: '46rem', lineHeight: 1.65 }}
+          >
+            Why this question: {evaluation.nextQuestionRationale}
+          </Typography>
+        </Box>
+
+        {evaluationHistory.length > 1 && (
+          <Accordion
+            disableGutters
+            elevation={0}
+            sx={{ bgcolor: 'transparent', '&::before': { display: 'none' } }}
+          >
+            <AccordionSummary
+              expandIcon={<Box aria-hidden="true">+</Box>}
+              sx={{ px: 0 }}
+            >
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                Evaluation history · {evaluationHistory.length} revisions
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 0 }}>
+              <Stack spacing={3}>
+                {presentedRevisions.map((revision) => (
+                  <Box
+                    key={revision.id}
+                    sx={{ pl: 2.5, borderLeft: 2, borderColor: 'divider' }}
+                  >
+                    <Typography sx={{ fontWeight: 700 }}>
+                      Revision {revision.revision} · {revision.statusLabel}
+                      {revision.latest ? ' · latest' : ''}
+                    </Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ mt: 0.75, lineHeight: 1.6 }}
+                    >
+                      {revision.challengeRationale
+                        ? `Your challenge: ${revision.challengeRationale}`
+                        : 'Original evaluation'}
+                    </Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ mt: 0.75, lineHeight: 1.6 }}
+                    >
+                      Gap recorded: {revision.evaluation.unresolvedGap}
+                    </Typography>
+                    <Stack
+                      component="ul"
+                      spacing={0.75}
+                      sx={{ mt: 1, mb: 0, pl: 2.5 }}
+                    >
+                      {revision.evaluation.evidence.map((item) => (
+                        <Typography
+                          component="li"
+                          key={`${revision.id}-${item.excerpt}-${item.finding}`}
+                          color="text.secondary"
+                          sx={{ lineHeight: 1.55 }}
+                        >
+                          “{item.excerpt}” — {item.finding}
+                        </Typography>
+                      ))}
+                    </Stack>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ mt: 1, lineHeight: 1.6 }}
+                    >
+                      Evaluation uncertainty: {revision.evaluation.uncertainty}
+                      {' · '}
+                      {nextMoveLabels[revision.evaluation.proposedNextMove]}
+                    </Typography>
+                    <Typography sx={{ mt: 1, lineHeight: 1.6 }}>
+                      Next question: {revision.evaluation.nextQuestion}
+                    </Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ mt: 0.5, lineHeight: 1.6 }}
+                    >
+                      Why: {revision.evaluation.nextQuestionRationale}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        )}
 
         <Box sx={{ pt: 4 }}>
           <Stack
@@ -208,8 +348,13 @@ export function FeedbackView({
             spacing={2}
             sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
           >
-            <Button variant="contained" type="button" onClick={onContinue}>
-              Next question
+            <Button
+              variant="contained"
+              type="button"
+              onClick={onContinue}
+              disabled={continueBusy || challengeBusy}
+            >
+              {continueBusy ? 'Opening…' : 'Next question'}
               <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                 →
               </Box>
@@ -219,10 +364,21 @@ export function FeedbackView({
               color="inherit"
               type="button"
               onClick={onEnd}
+              disabled={continueBusy || challengeBusy}
             >
               End
             </Button>
           </Stack>
+          {continueError && (
+            <Typography role="alert" color="error" sx={{ mt: 2 }}>
+              {continueError}
+            </Typography>
+          )}
+          {endError && (
+            <Typography role="alert" color="error" sx={{ mt: 2 }}>
+              Couldn&apos;t end this session. {endError}
+            </Typography>
+          )}
           <Box component="section" sx={{ mt: 5, maxWidth: '40rem' }}>
             <Typography component="h2" variant="h2" sx={{ fontSize: '1.2rem' }}>
               Think this judgment missed something?
@@ -234,7 +390,19 @@ export function FeedbackView({
               label="Why should Strata reconsider?"
               value={rationale}
               onChange={(event) => setRationale(event.target.value)}
-              disabled={challengeBusy}
+              disabled={
+                !aiAvailable ||
+                challengeBusy ||
+                continueBusy ||
+                challengeLimitReached
+              }
+              helperText={
+                !aiAvailable
+                  ? 'Update your API key before challenging this evaluation.'
+                  : challengeLimitReached
+                    ? 'Reconsideration limit reached for this answer.'
+                    : 'Submitting a challenge uses AI.'
+              }
               sx={{ mt: 2 }}
             />
             {challengeError && (
@@ -244,18 +412,20 @@ export function FeedbackView({
             )}
             <Button
               type="button"
-              disabled={challengeBusy || rationale.trim().length < 2}
+              disabled={
+                !aiAvailable ||
+                challengeBusy ||
+                continueBusy ||
+                rationale.trim().length < 2 ||
+                challengeLimitReached
+              }
               onClick={() => onChallenge(rationale.trim())}
               sx={{ mt: 1.5 }}
             >
-              {challengeBusy ? 'Reconsidering…' : 'Challenge evaluation'}
+              {challengeBusy
+                ? 'Reconsidering…'
+                : 'Challenge evaluation · uses AI'}
             </Button>
-            {evaluationHistory.length > 1 && (
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                Revision {evaluationHistory.length} · original judgment
-                preserved
-              </Typography>
-            )}
           </Box>
         </Box>
       </Box>

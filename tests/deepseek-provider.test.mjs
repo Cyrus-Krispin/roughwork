@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { DeepSeekLearningProvider } from '../src/main/ai/deepseek.ts';
+import {
+  DeepSeekLearningProvider,
+  deepSeekClientOptions,
+} from '../src/main/ai/deepseek.ts';
 
 function fakeClient(content) {
   const requests = [];
@@ -20,6 +23,13 @@ function fakeClient(content) {
     },
   };
 }
+
+test('disables automatic retries and bounds provider timeout', () => {
+  const options = deepSeekClientOptions('test-api-key');
+  assert.equal(options.maxRetries, 0);
+  assert.equal(options.timeout, 30_000);
+  assert.equal(options.baseURL, 'https://api.deepseek.com');
+});
 
 test('requests a JSON diagnostic question from DeepSeek', async () => {
   const client = fakeClient(
@@ -71,11 +81,21 @@ test('evaluates an attempt and proposes exactly one next question', async () => 
     topic: 'Model training',
     question: 'Why does training a model require a loss function?',
     answer,
+    recentEvidence: [
+      {
+        question: 'What does a model optimize?',
+        status: 'partial',
+        evidenceFindings: ['Connects training to an objective.'],
+        unresolvedGap: 'The update mechanism remains unclear.',
+      },
+    ],
   });
 
   assert.equal(result.status, 'partial');
   assert.equal(client.requests.length, 1);
   assert.match(client.requests[0].messages[1].content, new RegExp(answer));
+  assert.match(client.requests[0].messages[1].content, /recentEvidence/);
+  assert.doesNotMatch(client.requests[0].messages[1].content, /prior answer/i);
   assert.deepEqual(client.requests[0].response_format, {
     type: 'json_object',
   });

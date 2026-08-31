@@ -3,7 +3,8 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { helpLevels, type HelpLevel } from '../learning/contracts.ts';
+import type { HelpLevel } from '../learning/contracts.ts';
+import { getHelpPolicy, maximumHelpResponses } from '../learning/helpPolicy.ts';
 import type { PersistedHelpResponse } from '../learning/history.ts';
 
 const labels: Record<HelpLevel, string> = {
@@ -17,21 +18,21 @@ const labels: Record<HelpLevel, string> = {
 export function HelpControls({
   help,
   busy,
+  aiAvailable,
   onRequest,
 }: {
   help: PersistedHelpResponse[];
   busy: boolean;
+  aiAvailable: boolean;
   onRequest(level: HelpLevel): void;
 }) {
-  const current = help.at(-1)?.level;
-  const currentIndex = current ? helpLevels.indexOf(current) : -1;
-  const next =
-    currentIndex < helpLevels.length - 1 ? helpLevels[currentIndex + 1] : null;
+  const { current, next, canRepeat, canAdvance, terminal } =
+    getHelpPolicy(help);
 
   return (
     <Box component="section" aria-label="Graduated help" sx={{ mt: 4 }}>
       <Stack spacing={2}>
-        {help.map((item) => (
+        {help.map((item, index) => (
           <Box
             key={item.id}
             sx={{
@@ -40,6 +41,9 @@ export function HelpControls({
               borderLeft: 2,
               borderColor: 'primary.main',
             }}
+            role={index === help.length - 1 ? 'status' : undefined}
+            aria-live={index === help.length - 1 ? 'polite' : undefined}
+            aria-atomic={index === help.length - 1 ? 'true' : undefined}
           >
             <Typography variant="overline" color="text.secondary">
               {labels[item.level]}
@@ -55,21 +59,30 @@ export function HelpControls({
         spacing={1.5}
         sx={{ mt: 2 }}
       >
-        {current && (
-          <Button disabled={busy} onClick={() => onRequest(current)}>
-            Repeat this level
+        {current && canRepeat && (
+          <Button
+            disabled={busy || !aiAvailable}
+            onClick={() => onRequest(current)}
+          >
+            Repeat this level · uses AI
           </Button>
         )}
-        {next && (
+        {next && canAdvance && (
           <Button
             variant="outlined"
-            disabled={busy}
+            disabled={busy || !aiAvailable}
             onClick={() => onRequest(next)}
           >
-            {busy ? 'Preparing help…' : labels[next]}
+            {busy ? 'Preparing help…' : `${labels[next]} · uses AI`}
           </Button>
         )}
       </Stack>
+      {(help.length >= maximumHelpResponses || terminal) && (
+        <Typography color="text.secondary" sx={{ mt: 2, fontSize: '0.8rem' }}>
+          No further help levels are available for this question. Try an answer
+          when you are ready.
+        </Typography>
+      )}
     </Box>
   );
 }

@@ -9,6 +9,7 @@ import {
   type HelpLevel,
   type HelpResponse,
 } from '../../learning/contracts.ts';
+import type { RecentLearningEvidence } from '../../learning/providerContext.ts';
 
 type ChatMessage = {
   role: 'system' | 'user';
@@ -39,6 +40,7 @@ export type AttemptContext = {
   topic: string;
   question: string;
   answer: string;
+  recentEvidence: RecentLearningEvidence[];
 };
 
 export type HelpContext = {
@@ -48,7 +50,7 @@ export type HelpContext = {
   priorHelp: HelpResponse[];
 };
 
-export type ChallengeContext = AttemptContext & {
+export type ChallengeContext = Omit<AttemptContext, 'recentEvidence'> & {
   evaluation: EvaluationResult;
   rationale: string;
 };
@@ -131,6 +133,7 @@ export class DeepSeekLearningProvider {
               topic: context.topic,
               question: context.question,
               learnerAnswer: context.answer,
+              recentEvidence: context.recentEvidence,
             },
           )}`,
         },
@@ -186,24 +189,23 @@ export class DeepSeekLearningProvider {
   }
 }
 
-export function createDeepSeekProviderFromEnvironment(): DeepSeekLearningProvider {
-  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-
-  if (!apiKey) {
-    throw new Error(
-      'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file.',
-    );
-  }
-
-  const client = new OpenAI({
-    apiKey,
-    baseURL: 'https://api.deepseek.com',
-    maxRetries: 1,
-    timeout: 30_000,
-  });
+export function createDeepSeekProvider(options: {
+  apiKey: string;
+  model?: string;
+}): DeepSeekLearningProvider {
+  const client = new OpenAI(deepSeekClientOptions(options.apiKey));
 
   return new DeepSeekLearningProvider(
     client as unknown as ChatCompletionClient,
-    process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
+    options.model?.trim() || 'deepseek-v4-flash',
   );
+}
+
+export function deepSeekClientOptions(apiKey: string) {
+  return {
+    apiKey,
+    baseURL: 'https://api.deepseek.com',
+    maxRetries: 0,
+    timeout: 30_000,
+  } as const;
 }

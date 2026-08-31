@@ -36,6 +36,7 @@ export type PersistedLearningSession = {
   updatedAt: string;
   endedAt: string | null;
   currentQuestionId: string;
+  pendingFeedbackQuestionId: string | null;
   turns: PersistedTurn[];
 };
 

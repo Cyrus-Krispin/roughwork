@@ -6,26 +6,51 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import type { PersistedTurn } from '../learning/history.ts';
+import { SessionSummary } from './SessionSummary';
 
 type SessionReviewProps = {
   topic: string;
   turns: PersistedTurn[];
   onDone(): void;
+  headingLabel?: string;
+  actionLabel?: string;
 };
 
-export function SessionReview({ topic, turns, onDone }: SessionReviewProps) {
+export function SessionReview({
+  topic,
+  turns,
+  onDone,
+  headingLabel = 'Session history',
+  actionLabel = 'Back to topics',
+}: SessionReviewProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
     <Box component="main" sx={{ px: { xs: 2.5, sm: 6 }, py: 6 }}>
       <Box sx={{ width: 'min(100%, 56rem)', mx: 'auto' }}>
         <Typography variant="overline" color="text.secondary">
-          Session history
+          {headingLabel}
         </Typography>
         <Typography
           component="h1"
           variant="h1"
+          ref={headingRef}
+          tabIndex={-1}
           sx={{ mt: 1, fontSize: '3rem' }}
         >
           {topic}
+        </Typography>
+        <SessionSummary turns={turns} />
+        <Typography
+          component="h2"
+          variant="h2"
+          sx={{ mt: 8, fontSize: '1.65rem' }}
+        >
+          Turn by turn
         </Typography>
         <Stack divider={<Divider flexItem />} sx={{ mt: 5 }}>
           {turns.map((turn) => (
@@ -34,7 +59,7 @@ export function SessionReview({ topic, turns, onDone }: SessionReviewProps) {
                 Question {turn.turn}
               </Typography>
               <Typography
-                component="h2"
+                component="h3"
                 variant="h2"
                 sx={{ mt: 1, fontSize: '1.45rem' }}
               >
@@ -93,9 +118,10 @@ export function SessionReview({ topic, turns, onDone }: SessionReviewProps) {
           onClick={onDone}
           sx={{ mt: 4 }}
         >
-          Back to topics
+          {actionLabel}
         </Button>
       </Box>
     </Box>
   );
 }
+import { useEffect, useRef } from 'react';

@@ -115,7 +115,8 @@ The model cannot alter the learner's answer, mark a topic mastered, or write gra
 - Node integration remains disabled in the renderer.
 - Only packaged local content is executed.
 - Navigation and new-window behavior are denied unless explicitly allowed.
-- Provider credentials never cross into the renderer.
+- Provider credentials exist transiently in the trusted renderer password field and
+  cross only the validated save operation; they are never returned or persisted there.
 - Learner content is sent externally only during an explicit learner-started model action.
 
 ## Dependency Policy
