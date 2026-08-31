@@ -9,9 +9,25 @@ persist locally in SQLite and can be resumed, reviewed, ended, or deleted.
 Learners can request progressively stronger help and challenge a model judgment;
 both histories remain attributable and survive restart.
 
-## Requirements
+## Private alpha requirements
 
-- macOS
+- macOS 13 Ventura or later (Apple Silicon or Intel)
+- An internet connection for the AI-backed learning actions
+- A learner-owned DeepSeek account and API key; DeepSeek may charge for usage
+
+Download the ZIP for your Mac's architecture from the release, unzip it, and
+move **Strata AI.app** to Applications. Internal alpha builds are ad-hoc signed,
+not Apple-notarized. If macOS blocks the first launch, use Finder to Control-click
+the app and choose **Open**; do not disable Gatekeeper. Compare the release version
+and artifact verification result before opening a build from another source.
+
+Export a backup from **Local data** before every upgrade. Report private-alpha
+feedback and reproducible problems through
+[GitHub Issues](https://github.com/Cyrus-Krispin/strata-ai/issues); never attach an
+API key or an unredacted learning backup.
+
+## Development prerequisites
+
 - Node.js 24 or newer
 - npm 11 or newer
 
@@ -45,7 +61,11 @@ npm run lint
 npm run typecheck
 npm test
 npm run format:check
+npm run package:e2e
+npm run verify:packaged-flow
 npm run package
+npm run verify:artifact
+npm run verify:packaged-onboarding
 ```
 
 Create a local distributable after packaging succeeds:
@@ -54,7 +74,9 @@ Create a local distributable after packaging succeeds:
 npm run make
 ```
 
-Unsigned development builds are intended only for local use. Code signing and notarization will be planned before external distribution.
+Internal builds are ad-hoc signed and intended only for local evaluation. Public
+distribution requires Developer ID signing and Apple notarization; see the release
+guide.
 
 ## Documentation
 
@@ -63,6 +85,10 @@ Unsigned development builds are intended only for local use. Code signing and no
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Decision log](docs/decision-log.md)
+- [Privacy and data](docs/privacy-and-data.md)
+- [Release, recovery, and rollback](docs/release-and-recovery.md)
+- [Dependency security audit](docs/security-audit.md)
+- [Changelog](CHANGELOG.md)
 - [Local session persistence](docs/local-session-persistence.md)
 - [Proposed adaptive learning controls](docs/adaptive-learning-controls.md)
 - [Implementation plan](tasks/plan.md)
@@ -74,7 +100,8 @@ Unsigned development builds are intended only for local use. Code signing and no
   first fast, cost-conscious iteration
 - Session history is stored locally in Electron's per-user application-data
   directory and remains available after an app restart
-- No cloud sync, export, automatic backup, or knowledge graph yet
+- Versioned learning backups can be exported and restored; there is no automatic
+  backup, cloud sync, or knowledge graph
 - No accounts, cloud backend, or synchronization
 - Local secrets remain ignored; a key is transiently entered in the trusted renderer,
   sent once over validated IPC, and only encrypted data is persisted

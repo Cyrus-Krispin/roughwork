@@ -148,7 +148,7 @@ export function ProviderSettings({
             type="password"
             value={apiKey}
             onChange={(event) => setApiKey(event.target.value)}
-            disabled={busy || provider.secureStorageAvailable !== true}
+            disabled={busy || provider.secureStorageAvailable === false}
             autoFocus={!provider.configured}
             autoComplete="off"
             inputRef={apiKeyInputRef}
@@ -160,7 +160,7 @@ export function ProviderSettings({
             type="submit"
             disabled={
               busy ||
-              provider.secureStorageAvailable !== true ||
+              provider.secureStorageAvailable === false ||
               apiKey.trim().length < 8
             }
             sx={{ whiteSpace: 'nowrap', px: 3 }}

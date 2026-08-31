@@ -138,6 +138,16 @@ test('fails closed when secure storage is unavailable', async () => {
   });
 });
 
+test('attempts authoritative encryption when availability is unknown', async () => {
+  const cipher = fakeCipher();
+  cipher.available = null;
+  const { store } = await makeStore({ cipher });
+
+  assert.equal((await store.getStatus()).secureStorageAvailable, null);
+  await store.save('saved-key');
+  assert.equal((await store.getCredential()).source, 'secure_store');
+});
+
 test('reports an unreadable saved credential without leaking its failure', async () => {
   const { store, filePath } = await makeStore();
   await store.save('saved-key');

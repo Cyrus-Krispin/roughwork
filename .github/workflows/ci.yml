@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11.12.1
+      - run: npm ci
+      - run: npm run verify
+      - name: Block runtime dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+
+  macos-artifact:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11.12.1
+      - run: npm ci
+      - run: npm run package:e2e -- --arch=${{ matrix.arch }}
+      - run: npm run verify:packaged-flow -- --arch=${{ matrix.arch }}
+      - run: npm run package -- --arch=${{ matrix.arch }}
+      - run: npm run verify:artifact -- "out/Strata AI-darwin-${{ matrix.arch }}/Strata AI.app" "${{ matrix.arch }}"
+      - run: npm run verify:packaged-onboarding -- --arch=${{ matrix.arch }}
+      - run: npm run make:from-package -- --arch=${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strata-ai-0.1.0-macos-${{ matrix.arch }}-internal
+          path: out/make/zip/darwin/${{ matrix.arch }}/*.zip
+          if-no-files-found: error

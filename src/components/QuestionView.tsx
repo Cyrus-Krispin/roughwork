@@ -15,6 +15,7 @@ type QuestionViewProps = {
   answer: string;
   busy: boolean;
   aiBusy: boolean;
+  aiAvailable: boolean;
   error: string;
   canRetry: boolean;
   onAnswerChange(answer: string): void;
@@ -32,6 +33,7 @@ export function QuestionView({
   answer,
   busy,
   aiBusy,
+  aiAvailable,
   error,
   canRetry,
   onAnswerChange,
@@ -43,7 +45,7 @@ export function QuestionView({
 }: QuestionViewProps) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!aiBusy && answer.trim()) void onSubmit();
+    if (aiAvailable && !aiBusy && answer.trim()) void onSubmit();
   }
 
   return (
@@ -109,7 +111,7 @@ export function QuestionView({
             <Button
               variant="contained"
               type="submit"
-              disabled={aiBusy || !answer.trim()}
+              disabled={!aiAvailable || aiBusy || !answer.trim()}
               sx={{ minHeight: '3rem', width: { xs: '100%', sm: 'auto' } }}
             >
               {busy ? 'Checking…' : 'Check answer · uses AI'}
@@ -121,14 +123,19 @@ export function QuestionView({
             </Button>
           </Box>
         </Box>
-        <HelpControls help={help} busy={helpBusy} onRequest={onRequestHelp} />
+        <HelpControls
+          help={help}
+          busy={helpBusy}
+          aiAvailable={aiAvailable}
+          onRequest={onRequestHelp}
+        />
         {error && (
           <Alert
             severity="error"
             variant="outlined"
             role="alert"
             action={
-              canRetry ? (
+              canRetry && aiAvailable ? (
                 <Button
                   color="error"
                   size="small"

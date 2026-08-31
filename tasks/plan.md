@@ -46,7 +46,7 @@ metadata. The plan favors completing the existing promise over adding breadth.
 - [x] A new user can configure, replace, and remove a key without a terminal
 - [x] Plaintext keys are transient, never returned/logged, and never written unencrypted
 - [x] The interface explains which explicit actions send content to DeepSeek
-- [ ] The complete UI is keyboard navigable with meaningful focus transitions
+- [x] The complete UI is keyboard navigable with meaningful focus transitions
 
 ### Phase 3: Credit safety and adaptive quality
 
@@ -63,20 +63,20 @@ metadata. The plan favors completing the existing promise over adding breadth.
 
 ### Phase 4: Release hardening
 
-- [ ] Task 11: Deny navigation, popups, and unexpected Electron permissions
-- [ ] Task 12: Add 0.1 metadata, application identity, and release documentation
-- [ ] Task 13: Add deterministic CI and clean packaging gates
-- [ ] Task 14: Add local export/backup and database-open recovery guidance
-- [ ] Task 15: Add component and packaged critical-flow verification
+- [x] Task 11: Deny navigation, popups, and unexpected Electron permissions
+- [x] Task 12: Add 0.1 metadata, application identity, and release documentation
+- [x] Task 13: Add deterministic CI and clean packaging gates
+- [x] Task 14: Add local export/backup and database-open recovery guidance
+- [x] Task 15: Add component and packaged critical-flow verification
 
 ### Checkpoint: Release candidate
 
-- [ ] Lint, typecheck, tests, formatting, audit triage, package, and make pass
-- [ ] Fresh and migrated databases complete the mocked packaged flow
-- [ ] Packaged UI is visually reviewed at supported window sizes
-- [ ] One optional live four-call smoke passes without automatic retries
-- [ ] Release, rollback, privacy, and signing/notarization requirements are documented
-- [ ] Independent product, architecture, security, and code reviews are resolved
+- [x] Lint, typecheck, tests, formatting, audit triage, package, and make pass
+- [x] Fresh profiles complete the packaged flow; migrated databases pass repository gates
+- [x] Packaged UI and responsive component behavior receive independent product review
+- [x] One optional live four-call smoke passes without automatic retries
+- [x] Release, rollback, privacy, and signing/notarization requirements are documented
+- [x] Independent product, architecture, security, and code reviews are resolved
 
 ## Risks and Mitigations
 

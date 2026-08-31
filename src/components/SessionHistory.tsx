@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -45,14 +45,20 @@ export function SessionHistory({
     useState<LearningSessionSummary | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [deleteMessage, setDeleteMessage] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   async function confirmDelete(): Promise<void> {
     if (!deleteTarget) return;
+    const deletedTopic = deleteTarget.topic;
     setDeleteBusy(true);
     setDeleteError('');
     const deleted = await onDelete(deleteTarget.id);
-    if (deleted) setDeleteTarget(null);
-    else setDeleteError("Couldn't delete this session. Please try again.");
+    if (deleted) {
+      setDeleteTarget(null);
+      setDeleteMessage(`Deleted ${deletedTopic} session.`);
+      requestAnimationFrame(() => headingRef.current?.focus());
+    } else setDeleteError("Couldn't delete this session. Please try again.");
     setDeleteBusy(false);
   }
 
@@ -64,6 +70,8 @@ export function SessionHistory({
     >
       <Typography
         id="recent-sessions-heading"
+        ref={headingRef}
+        tabIndex={-1}
         component="h2"
         variant="overline"
         color="text.secondary"
@@ -71,6 +79,11 @@ export function SessionHistory({
       >
         Recent sessions
       </Typography>
+      {deleteMessage && (
+        <Typography role="status" color="text.secondary" sx={{ mt: 2 }}>
+          {deleteMessage}
+        </Typography>
+      )}
       {loading && (
         <Typography color="text.secondary" sx={{ mt: 2, fontSize: '0.82rem' }}>
           Loading local history…
@@ -156,7 +169,8 @@ export function SessionHistory({
         <DialogContent>
           <DialogContentText>
             {deleteTarget?.topic} and all of its answers and evaluation evidence
-            will be permanently deleted from this device.
+            will be removed from Strata AI on this device. Exported backups and
+            operating-system copies are not removed.
           </DialogContentText>
           {deleteError && (
             <Typography role="alert" color="error" sx={{ mt: 2 }}>

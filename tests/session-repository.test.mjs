@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
   migrateLearningDatabase,
   openLearningDatabase,
+  verifyLearningDatabase,
 } from '../src/main/persistence/database.ts';
 import { LearningSessionRepository } from '../src/main/persistence/sessionRepository.ts';
 
@@ -55,6 +56,21 @@ test('opens a migrated database with safety pragmas enabled', () => {
   database.close();
 });
 
+test('repairs private permissions for the database directory and WAL files', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'strata-database-test-'));
+  chmodSync(directory, 0o777);
+  const path = join(directory, 'strata-ai.sqlite3');
+  const database = openLearningDatabase(path);
+
+  assert.equal(statSync(directory).mode & 0o777, 0o700);
+  for (const candidate of [path, `${path}-wal`, `${path}-shm`]) {
+    assert.equal(statSync(candidate).mode & 0o777, 0o600);
+  }
+
+  database.close();
+  rmSync(directory, { recursive: true });
+});
+
 test('migrates a version-1 database without rewriting existing sessions', () => {
   const database = new DatabaseSync(':memory:');
   database.exec(`
@@ -89,6 +105,55 @@ test('migrates a version-1 database without rewriting existing sessions', () => 
         "SELECT name FROM sqlite_master WHERE name = 'evaluation_challenges'",
       )
       .get(),
+  );
+  database.close();
+});
+
+test('rejects gapped and newer migration histories', () => {
+  for (const versions of [[2], [1, 2, 3, 4]]) {
+    const database = new DatabaseSync(':memory:');
+    database.exec(`
+      CREATE TABLE schema_migrations (
+        version INTEGER PRIMARY KEY,
+        applied_at TEXT NOT NULL
+      ) STRICT;
+    `);
+    const insert = database.prepare(
+      'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)',
+    );
+    versions.forEach((version) =>
+      insert.run(version, '2026-08-31T00:00:00.000Z'),
+    );
+
+    assert.throws(
+      () => migrateLearningDatabase(database),
+      /unsupported migration history/i,
+    );
+    database.close();
+  }
+});
+
+test('rejects foreign-key corruption during verification', () => {
+  const database = openLearningDatabase(':memory:');
+  database.exec('PRAGMA foreign_keys = OFF');
+  database
+    .prepare(
+      `INSERT INTO questions
+        (id, session_id, turn_number, prompt, intent, parent_evaluation_id, created_at)
+       VALUES (?, ?, ?, ?, ?, NULL, ?)`,
+    )
+    .run(
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      1,
+      'Why do indexes help lookups?',
+      'Checks the learner understanding of indexed access.',
+      new Date().toISOString(),
+    );
+
+  assert.throws(
+    () => verifyLearningDatabase(database),
+    /invalid relationships/i,
   );
   database.close();
 });
@@ -344,7 +409,7 @@ test('returns the saved result when an acknowledged submission is retried', () =
   database.close();
 });
 
-test('ends without changing history and rejects later submissions', () => {
+test('ends without changing history, clears pending feedback, and rejects later submissions', () => {
   const { database, repository } = createRepository();
   const session = repository.createSession(
     'Database indexes',
@@ -354,6 +419,7 @@ test('ends without changing history and rejects later submissions', () => {
   const ended = repository.endSession(session.id);
 
   assert.equal(ended.status, 'ended');
+  assert.equal(ended.pendingFeedbackQuestionId, null);
   assert.ok(ended.endedAt);
   assert.throws(
     () =>

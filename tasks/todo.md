@@ -64,12 +64,12 @@ manual quit/resume check.
 
 ## Tasks 11–15: Release hardening
 
-- [ ] Explicit navigation, popup, permission, and external-content denial.
-- [ ] Version 0.1.0, stable bundle identity, clean plist metadata, changelog, privacy,
+- [x] Explicit navigation, popup, permission, and external-content denial.
+- [x] Version 0.1.0, stable bundle identity, clean plist metadata, changelog, privacy,
       release, signing/notarization, and rollback documentation.
-- [ ] CI runs clean install, lint, typecheck, tests, formatting, audit triage, and package.
-- [ ] Local session export/backup plus database recovery guidance.
-- [ ] Mocked component and packaged critical-flow checks cover onboarding, retry,
+- [x] CI runs clean install, lint, typecheck, tests, formatting, audit triage, and package.
+- [x] Local session export/backup plus database recovery guidance.
+- [x] Mocked component and packaged critical-flow checks cover onboarding, retry,
       pending feedback, help, challenge, end summary, deletion, and keyboard use.
 
 **Verification:** full deterministic gate, clean artifact, audit report, independent review.
@@ -78,11 +78,11 @@ manual quit/resume check.
 
 ## Final release-candidate gate
 
-- [ ] No unresolved Critical or Required review finding.
-- [ ] No secret or learner fixture in tracked output.
-- [ ] Runtime dependency audit is clean; reachable build advisories are fixed or explicitly blocked.
-- [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run format:check`,
+- [x] No unresolved Critical or Required review finding.
+- [x] No secret or learner fixture in tracked output.
+- [x] Runtime dependency audit is clean; reachable build advisories are fixed or explicitly blocked.
+- [x] `npm run lint`, `npm run typecheck`, `npm test`, `npm run format:check`,
       `npm run package`, and `npm run make` pass after the final change.
-- [ ] Packaged journey works with a fake provider and a fresh local profile.
-- [ ] Optional live smoke uses at most four explicit calls and captures sanitized fixtures.
+- [x] Packaged journey works with a fake provider and a fresh local profile.
+- [x] Optional live smoke uses exactly four explicit calls with fixed, non-sensitive text.
 - [ ] Pull request to `main` explains product value, risks, verification, and release prerequisites.

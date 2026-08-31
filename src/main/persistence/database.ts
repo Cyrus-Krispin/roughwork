@@ -1,4 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
+import { chmodSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const migrations = [
   {
@@ -124,14 +126,20 @@ export function migrateLearningDatabase(database: DatabaseSync): void {
     ) STRICT;
   `);
 
-  const current = database
-    .prepare(
-      'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations',
-    )
-    .get() as { version: number };
+  const applied = database
+    .prepare('SELECT version FROM schema_migrations ORDER BY version ASC')
+    .all() as Array<{ version: number }>;
+  const versions = applied.map((item) => item.version);
+  const contiguous = versions.every((version, index) => version === index + 1);
+  const currentVersion = versions.at(-1) ?? 0;
+  if (!contiguous || currentVersion > migrations.length) {
+    throw new Error(
+      'This learning database uses an unsupported migration history.',
+    );
+  }
 
   for (const migration of migrations) {
-    if (migration.version <= current.version) continue;
+    if (migration.version <= currentVersion) continue;
 
     database.exec('BEGIN IMMEDIATE');
     try {
@@ -149,12 +157,63 @@ export function migrateLearningDatabase(database: DatabaseSync): void {
   }
 }
 
+export function verifyLearningDatabase(database: DatabaseSync): void {
+  const integrity = database.prepare('PRAGMA quick_check').all() as Array<{
+    quick_check: string;
+  }>;
+  if (
+    integrity.length !== 1 ||
+    integrity[0]?.quick_check.toLowerCase() !== 'ok'
+  ) {
+    throw new Error('The learning database failed its integrity check.');
+  }
+
+  const foreignKeyViolations = database
+    .prepare('PRAGMA foreign_key_check')
+    .all();
+  if (foreignKeyViolations.length > 0) {
+    throw new Error('The learning database contains invalid relationships.');
+  }
+}
+
+function verifyDatabaseIntegrity(database: DatabaseSync): void {
+  const integrity = database.prepare('PRAGMA quick_check').all() as Array<{
+    quick_check: string;
+  }>;
+  if (
+    integrity.length !== 1 ||
+    integrity[0]?.quick_check.toLowerCase() !== 'ok'
+  ) {
+    throw new Error('The learning database failed its integrity check.');
+  }
+}
+
+function protectDatabaseFiles(path: string): void {
+  chmodSync(dirname(path), 0o700);
+  for (const candidate of [path, `${path}-wal`, `${path}-shm`]) {
+    try {
+      chmodSync(candidate, 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+}
+
 export function openLearningDatabase(path: string): DatabaseSync {
   const database = new DatabaseSync(path);
-  database.exec('PRAGMA foreign_keys = ON');
-  database.exec('PRAGMA busy_timeout = 5000');
-  database.exec('PRAGMA synchronous = NORMAL');
-  if (path !== ':memory:') database.exec('PRAGMA journal_mode = WAL');
-  migrateLearningDatabase(database);
-  return database;
+  try {
+    verifyDatabaseIntegrity(database);
+    if (path !== ':memory:') protectDatabaseFiles(path);
+    database.exec('PRAGMA foreign_keys = ON');
+    database.exec('PRAGMA busy_timeout = 5000');
+    database.exec('PRAGMA synchronous = NORMAL');
+    if (path !== ':memory:') database.exec('PRAGMA journal_mode = WAL');
+    migrateLearningDatabase(database);
+    verifyLearningDatabase(database);
+    if (path !== ':memory:') protectDatabaseFiles(path);
+    return database;
+  } catch (error) {
+    database.close();
+    throw error;
+  }
 }

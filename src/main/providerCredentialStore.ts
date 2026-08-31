@@ -22,7 +22,7 @@ export type ProviderCredential = {
 };
 
 export type ProviderCredentialCipher = {
-  isAvailable(): Promise<boolean>;
+  isAvailable(): Promise<boolean | null>;
   encrypt(value: string): Promise<Buffer>;
   decrypt(value: Buffer): Promise<{ value: string; shouldReEncrypt: boolean }>;
 };
@@ -115,7 +115,7 @@ export class ProviderCredentialStore {
   }
 
   private async getStatusUnlocked(): Promise<ProviderStatus> {
-    let secureStorageAvailable = false;
+    let secureStorageAvailable: boolean | null = false;
     const hasStoredCredential = await this.hasStoredCredential();
     try {
       secureStorageAvailable = await this.cipher.isAvailable();
@@ -142,7 +142,7 @@ export class ProviderCredentialStore {
   private async getCredentialUnlocked(): Promise<ProviderCredential | null> {
     const stored = await this.readStoredCredential();
     if (stored) {
-      if (!(await this.cipher.isAvailable()))
+      if ((await this.cipher.isAvailable()) === false)
         throw new Error(unreadableMessage);
       try {
         const decrypted = await this.cipher.decrypt(stored);
@@ -170,7 +170,7 @@ export class ProviderCredentialStore {
     } catch {
       throw credentialFailure('The provider credential is invalid.');
     }
-    if (!(await this.cipher.isAvailable())) {
+    if ((await this.cipher.isAvailable()) === false) {
       throw credentialFailure('Secure storage is unavailable on this device.');
     }
 

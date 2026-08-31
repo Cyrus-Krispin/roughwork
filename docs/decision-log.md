@@ -150,3 +150,85 @@ decisions are superseded rather than silently rewritten.
   per-question limit is reached. Older evidence remains available locally in review
   but does not enter the current prompt.
 - **Reversibility:** High; bounds can change after measured private-alpha use.
+
+## D010 — Make learning backups portable and additive
+
+- **Status:** Accepted
+- **Date:** 2026-08-31
+- **Decision:** Export complete visible learning provenance as a versioned,
+  owner-private JSON file. Restore only after whole-file validation and native
+  confirmation; import missing sessions, skip identical IDs, and reject any
+  conflict without mutation. Never include credentials or filesystem paths. If
+  the live database cannot open, move its database/WAL/SHM set into a timestamped
+  private recovery folder before creating clean local history; roll back partial
+  moves.
+- **Why:** A local-first product needs a user-controlled exit and recovery path.
+  Copying the live WAL-mode SQLite file is neither portable nor reliably complete.
+- **Alternatives:** One-way JSON export or raw database copying. Rejected because
+  neither gives ordinary learners a safe restore workflow.
+- **Consequences:** Backups are readable and portable but unencrypted, so the UI
+  and privacy documentation tell users to keep them private.
+- **Reversibility:** Medium; format version 1 becomes a compatibility promise.
+
+## D011 — Release 0.1 as a hardened private macOS alpha
+
+- **Status:** Accepted
+- **Date:** 2026-08-31
+- **Decision:** Support macOS 13+ on arm64 and x64, use `ai.strata.learning`, strict
+  Electron fuses, architecture-verified native ZIP artifacts for both targets,
+  deterministic CI, and a structurally valid
+  ad-hoc signature for internal builds. Require Developer ID signing and Apple
+  notarization before public distribution.
+- **Why:** Product identity and artifact invariants must be verifiable without
+  pretending unavailable Apple credentials exist.
+- **Alternatives:** Keep generic Electron metadata or claim unsigned builds are
+  publicly releasable. Both fail the trust boundary.
+- **Consequences:** Internal users can evaluate a coherent release candidate;
+  public release remains an explicit external prerequisite. Forge currently loads
+  the packaged renderer with `file://`, so the file-protocol extra-privileges fuse
+  remains enabled for the private alpha behind ASAR integrity, sandboxing, strict
+  CSP, and navigation/permission denial. Move the renderer to a privileged custom
+  `app://` protocol and disable that fuse before public distribution. The
+  browser-specific V8 snapshot fuse remains disabled because this package does not
+  ship the snapshot it requires.
+- **Reversibility:** Low for bundle identity and backup compatibility; high for CI
+  and maker details.
+
+## D012 — Keep Forge's file renderer only for the private alpha
+
+- **Status:** Accepted
+- **Date:** 2026-09-01
+- **Decision:** Disable the browser-specific V8 snapshot fuse because the package
+  does not ship its required snapshot. Keep file-protocol extra privileges enabled
+  only while Forge loads the private-alpha renderer through `file://`; require a
+  privileged custom `app://` protocol and disable that fuse before public release.
+- **Why:** Packaged launch testing proved that the opposite fuse settings either
+  crash the app or prevent its renderer from loading. The current functional path
+  is bounded by ASAR integrity, renderer sandboxing, strict CSP, exact IPC sender
+  checks, and navigation, popup, network, and permission denial.
+- **Alternatives:** Ship the broken strict settings or migrate protocols inside the
+  private-alpha release. The former is unusable; the latter expands this release's
+  surface after the rest of its architecture has stabilized.
+- **Consequences:** The private alpha accepts a documented defense-in-depth gap.
+  Packaged critical-flow and exact fuse verification remain release gates.
+- **Reversibility:** High; the custom protocol is a contained main-process change.
+
+## D013 — Gate releases on native current runners and recoverable interactions
+
+- **Status:** Accepted
+- **Date:** 2026-09-01
+- **Decision:** Build and execute arm64 on `macos-15` and x64 on
+  `macos-15-intel`. When a provider credential fails, disable only AI-backed
+  actions until it is replaced while keeping local Continue, End, history, export,
+  and recovery available. Announce generated help and deletion completion, restore
+  focus after deletion, and surface End failures next to the action.
+- **Why:** A deterministic release cannot depend on a runner already in retirement,
+  and a recoverable product must prevent repeated known-bad requests without
+  trapping keyboard or assistive-technology users.
+- **Alternatives:** Keep cross-architecture emulation and rely on generic errors.
+  Rejected because native CI proves the actual binaries and generic errors leave
+  important state changes ambiguous.
+- **Consequences:** CI uses two explicit macOS runner labels. Provider outages do
+  not block offline ownership actions, and accessible completion becomes part of
+  the packaged journey.
+- **Reversibility:** High; runner and interaction policies can evolve independently.

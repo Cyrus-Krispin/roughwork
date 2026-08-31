@@ -25,6 +25,8 @@ const strataAiApi: StrataAiApi = {
   endSession: (request) => ipcRenderer.invoke('learning:end-session', request),
   deleteSession: (request) =>
     ipcRenderer.invoke('learning:delete-session', request),
+  exportLearningData: () => ipcRenderer.invoke('learning:export-data'),
+  restoreLearningData: () => ipcRenderer.invoke('learning:restore-data'),
 };
 
 contextBridge.exposeInMainWorld('strataAi', strataAiApi);

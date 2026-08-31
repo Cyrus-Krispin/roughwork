@@ -6,6 +6,11 @@ import type {
 } from './history.ts';
 import { helpLevels } from './contracts.ts';
 import { LearningFailure, type LearningErrorCode } from './errors.ts';
+import type {
+  ExportLearningDataResult,
+  LocalDataOperationResult,
+  RestoreLearningDataResult,
+} from './localData.ts';
 
 export type ProviderCredentialSource = 'secure_store' | 'environment';
 
@@ -128,6 +133,12 @@ export type StrataAiApi = {
     request: SessionRequest,
   ): Promise<LearningResult<PersistedLearningSession>>;
   deleteSession(request: SessionRequest): Promise<LearningResult<boolean>>;
+  exportLearningData(): Promise<
+    LocalDataOperationResult<ExportLearningDataResult>
+  >;
+  restoreLearningData(): Promise<
+    LocalDataOperationResult<RestoreLearningDataResult>
+  >;
 };
 
 export function parseTopicRequest(value: unknown): TopicRequest {

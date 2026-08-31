@@ -6,6 +6,12 @@ import Typography from '@mui/material/Typography';
 
 import type { LearningSessionSummary } from '../learning/history.ts';
 import type { ProviderStatus } from '../learning/ipc.ts';
+import type {
+  ExportLearningDataResult,
+  LocalDataOperationResult,
+  RestoreLearningDataResult,
+} from '../learning/localData.ts';
+import { LocalDataSection } from './LocalDataSection';
 import { ProviderSettings } from './ProviderSettings';
 import { SessionHistory } from './SessionHistory';
 
@@ -26,6 +32,12 @@ type StartViewProps = {
   onSaveProviderCredential(apiKey: string): Promise<boolean>;
   onRemoveProviderCredential(): Promise<boolean>;
   onOpenDeepSeekKeys(): Promise<void>;
+  onExportLearningData(): Promise<
+    LocalDataOperationResult<ExportLearningDataResult>
+  >;
+  onRestoreLearningData(): Promise<
+    LocalDataOperationResult<RestoreLearningDataResult>
+  >;
   providerSettingsInitiallyExpanded?: boolean;
 };
 
@@ -44,6 +56,8 @@ export function StartView({
   onSaveProviderCredential,
   onRemoveProviderCredential,
   onOpenDeepSeekKeys,
+  onExportLearningData,
+  onRestoreLearningData,
   providerSettingsInitiallyExpanded = false,
 }: StartViewProps) {
   const [topic, setTopic] = useState('');
@@ -187,6 +201,10 @@ export function StartView({
           onOpen={onOpenSession}
           onDelete={onDeleteSession}
           onRetry={onRetryHistory}
+        />
+        <LocalDataSection
+          onExport={onExportLearningData}
+          onRestore={onRestoreLearningData}
         />
       </Box>
     </Box>

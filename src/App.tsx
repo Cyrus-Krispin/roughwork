@@ -23,6 +23,11 @@ import type { HelpLevel } from './learning/contracts.ts';
 import type { LearningError, ProviderStatus } from './learning/ipc.ts';
 import { deleteLocalSession } from './learning/historyOperations.ts';
 import { ProviderRequestGate } from './learning/providerRequestGate.ts';
+import type {
+  ExportLearningDataResult,
+  LocalDataOperationResult,
+  RestoreLearningDataResult,
+} from './learning/localData.ts';
 
 type ProviderState = ProviderStatus & {
   loading: boolean;
@@ -74,6 +79,7 @@ export function App() {
   const [challengeError, setChallengeError] = useState('');
   const [continueBusy, setContinueBusy] = useState(false);
   const [continueError, setContinueError] = useState('');
+  const [endError, setEndError] = useState('');
   const [providerRequestGate] = useState(() => new ProviderRequestGate());
   const helpRequest = useRef<{ level: HelpLevel; id: string } | null>(null);
   const challengeRequest = useRef<{
@@ -243,6 +249,7 @@ export function App() {
 
   async function startSession(topic: string): Promise<void> {
     await runProviderRequest(async () => {
+      setEndError('');
       dispatch({ type: 'start', topic });
       await requestSessionStart(topic.trim());
     });
@@ -303,13 +310,16 @@ export function App() {
 
   async function endSession(): Promise<void> {
     if (!session.sessionId || operationBusy) return;
+    setEndError('');
     const result = await window.strataAi.endSession({
       sessionId: session.sessionId,
     });
     if (result.ok) {
+      setLocalError('');
       dispatch({ type: 'session_ended', session: result.data });
       await refreshSessions();
     } else {
+      setEndError(result.error.message);
       setLocalError(result.error.message);
     }
   }
@@ -329,6 +339,7 @@ export function App() {
       questionId: session.questionId,
     });
     if (result.ok) {
+      setEndError('');
       dispatch({ type: 'feedback_acknowledged', session: result.data });
     } else {
       setContinueError(
@@ -351,6 +362,25 @@ export function App() {
       setLocalError("Couldn't delete that local session. Please try again.");
       return false;
     }
+  }
+
+  async function exportLearningData(): Promise<
+    LocalDataOperationResult<ExportLearningDataResult>
+  > {
+    return window.strataAi.exportLearningData();
+  }
+
+  async function restoreLearningData(): Promise<
+    LocalDataOperationResult<RestoreLearningDataResult>
+  > {
+    const result = await window.strataAi.restoreLearningData();
+    if (result.ok && result.data.status === 'restored') {
+      await refreshSessions();
+      requestAnimationFrame(() => {
+        document.getElementById('recent-sessions-heading')?.focus();
+      });
+    }
+    return result;
   }
 
   async function requestHelp(level: HelpLevel): Promise<void> {
@@ -435,6 +465,7 @@ export function App() {
     if (operationBusy) return;
     dispatch({ type: 'restart' });
     setLocalError('');
+    setEndError('');
     void refreshSessions();
   }
 
@@ -572,6 +603,8 @@ export function App() {
               onSaveProviderCredential={saveProviderCredential}
               onRemoveProviderCredential={removeProviderCredential}
               onOpenDeepSeekKeys={openDeepSeekKeys}
+              onExportLearningData={exportLearningData}
+              onRestoreLearningData={restoreLearningData}
               providerSettingsInitiallyExpanded={providerSettingsRequested}
             />
           </>
@@ -614,14 +647,16 @@ export function App() {
             >
               {session.errorMessage}
             </Typography>
-            <Button
-              variant="contained"
-              type="button"
-              onClick={retryRequest}
-              sx={{ mt: 3 }}
-            >
-              Retry · uses AI
-            </Button>
+            {!providerSettingsRequested && (
+              <Button
+                variant="contained"
+                type="button"
+                onClick={retryRequest}
+                sx={{ mt: 3 }}
+              >
+                Retry · uses AI
+              </Button>
+            )}
             {providerSettingsRequested && (
               <Button
                 variant="text"
@@ -650,6 +685,7 @@ export function App() {
               (session.status === 'error' ? session.errorMessage : '')
             }
             canRetry={session.status === 'error'}
+            aiAvailable={!providerSettingsRequested}
             onAnswerChange={(answer) =>
               dispatch({ type: 'answer_changed', answer })
             }
@@ -679,6 +715,8 @@ export function App() {
             continueError={continueError}
             challengeBusy={challengeBusy}
             onEnd={() => void endSession()}
+            endError={endError}
+            aiAvailable={!providerSettingsRequested}
             evaluationHistory={
               session.history.find(
                 (item) => item.questionId === session.questionId,

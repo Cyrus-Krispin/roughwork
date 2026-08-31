@@ -24,6 +24,8 @@ type FeedbackViewProps = {
   continueBusy: boolean;
   continueError: string;
   onEnd(): void;
+  endError: string;
+  aiAvailable: boolean;
   evaluationHistory: PersistedEvaluationRevision[];
   challengeBusy: boolean;
   challengeError: string;
@@ -47,6 +49,8 @@ export function FeedbackView({
   continueBusy,
   continueError,
   onEnd,
+  endError,
+  aiAvailable,
   evaluationHistory,
   challengeBusy,
   challengeError,
@@ -370,6 +374,11 @@ export function FeedbackView({
               {continueError}
             </Typography>
           )}
+          {endError && (
+            <Typography role="alert" color="error" sx={{ mt: 2 }}>
+              Couldn&apos;t end this session. {endError}
+            </Typography>
+          )}
           <Box component="section" sx={{ mt: 5, maxWidth: '40rem' }}>
             <Typography component="h2" variant="h2" sx={{ fontSize: '1.2rem' }}>
               Think this judgment missed something?
@@ -381,11 +390,18 @@ export function FeedbackView({
               label="Why should Strata reconsider?"
               value={rationale}
               onChange={(event) => setRationale(event.target.value)}
-              disabled={challengeBusy || continueBusy || challengeLimitReached}
-              helperText={
+              disabled={
+                !aiAvailable ||
+                challengeBusy ||
+                continueBusy ||
                 challengeLimitReached
-                  ? 'Reconsideration limit reached for this answer.'
-                  : 'Submitting a challenge uses AI.'
+              }
+              helperText={
+                !aiAvailable
+                  ? 'Update your API key before challenging this evaluation.'
+                  : challengeLimitReached
+                    ? 'Reconsideration limit reached for this answer.'
+                    : 'Submitting a challenge uses AI.'
               }
               sx={{ mt: 2 }}
             />
@@ -397,6 +413,7 @@ export function FeedbackView({
             <Button
               type="button"
               disabled={
+                !aiAvailable ||
                 challengeBusy ||
                 continueBusy ||
                 rationale.trim().length < 2 ||

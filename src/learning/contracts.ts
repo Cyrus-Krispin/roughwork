@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const shortQuestionSchema = z
+export const shortQuestionSchema = z
   .string()
   .trim()
   .min(5)
@@ -16,14 +16,14 @@ const shortQuestionSchema = z
     { message: 'Question must be one sentence with one question mark.' },
   );
 
-const diagnosticQuestionSchema = z
+export const diagnosticQuestionSchema = z
   .object({
     question: shortQuestionSchema,
     intent: z.string().trim().min(10).max(240),
   })
   .strict();
 
-const evaluationSchema = z
+export const evaluationSchema = z
   .object({
     status: z.enum(['demonstrated', 'partial', 'misconception', 'uncertain']),
     evidence: z
@@ -53,7 +53,7 @@ export const helpLevels = [
   'direct_explanation',
 ] as const;
 
-const helpResponseSchema = z.discriminatedUnion('level', [
+export const helpResponseSchema = z.discriminatedUnion('level', [
   z
     .object({ level: z.literal('rephrase'), content: shortQuestionSchema })
     .strict(),
