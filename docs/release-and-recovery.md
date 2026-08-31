@@ -3,22 +3,29 @@
 ## Release scope
 
 Strata AI 0.1.0 is a private macOS alpha for macOS 13 Ventura or later on Apple
-Silicon and Intel Macs. The repository produces a native-architecture ZIP. There
-are no Windows or Linux release claims in 0.1.
+Silicon. The repository produces one native `arm64` ZIP and does not support Intel
+Macs, Windows, or Linux in 0.1.
 
 Local builds receive a structurally valid ad-hoc signature and are intended only
 for development and internal evaluation. Public distribution is blocked until a
 Developer ID Application certificate and Apple notarization credentials are
 available.
 
-For private-alpha evaluation, download the ZIP matching the Mac (`arm64` for
-Apple Silicon or `x64` for Intel), unzip it, and move **Strata AI.app** to
-Applications. Confirm the published version and artifact-verification result. An
+For private-alpha evaluation, download the Apple Silicon ZIP, unzip it, and move
+**Strata AI.app** to Applications. Confirm the published version and
+artifact-verification result. The verifier rejects any Mach-O executable,
+framework, helper, updater, plug-in, or native library that is not arm64-only. An
 internal ad-hoc build may require Control-clicking the app in Finder and choosing
 **Open** on first launch; do not disable Gatekeeper. Export a backup before every
 upgrade and report issues through
 [GitHub Issues](https://github.com/Cyrus-Krispin/strata-ai/issues) without attaching
 secrets or unredacted backups.
+
+Finder's **Get Info** panel must report **Application (Apple silicon)**. An
+Intel-app support warning means macOS found an older Intel copy or Intel component;
+quit Strata AI, remove that older copy, and install the current verified artifact.
+The Keychain prompt used to protect the DeepSeek credential is separate from
+Rosetta and does not indicate Intel execution.
 
 Signed release builds use these environment variables:
 

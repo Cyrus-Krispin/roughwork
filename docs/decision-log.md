@@ -172,7 +172,7 @@ decisions are superseded rather than silently rewritten.
 
 ## D011 — Release 0.1 as a hardened private macOS alpha
 
-- **Status:** Accepted
+- **Status:** Accepted; architecture scope partially superseded by D015
 - **Date:** 2026-08-31
 - **Decision:** Support macOS 13+ on arm64 and x64, use `ai.strata.learning`, strict
   Electron fuses, architecture-verified native ZIP artifacts for both targets,
@@ -215,7 +215,7 @@ decisions are superseded rather than silently rewritten.
 
 ## D013 — Gate releases on native current runners and recoverable interactions
 
-- **Status:** Accepted
+- **Status:** Accepted; Intel runner scope superseded by D015
 - **Date:** 2026-09-01
 - **Decision:** Build and execute arm64 on `macos-15` and x64 on
   `macos-15-intel`. When a provider credential fails, disable only AI-backed
@@ -251,3 +251,29 @@ decisions are superseded rather than silently rewritten.
   together, after compatibility and provenance review.
 - **Reversibility:** High; the pins can advance through another reviewed, verified
   configuration change.
+
+## D015 — Release only native Apple Silicon artifacts
+
+- **Status:** Accepted
+- **Date:** 2026-09-01
+- **Decision:** Support macOS 13+ only on Apple Silicon, produce only an `arm64`
+  ZIP, require native execution in the application metadata, and reject every
+  non-arm64 Mach-O file anywhere in the packaged bundle. Remove the Intel CI job,
+  artifact, installation guidance, and Rosetta accommodation together.
+- **Why:** Apple has announced the end of general-purpose Rosetta support after
+  macOS 27. The product has no known Intel users, while carrying a second release
+  doubles packaging and verification cost and leaves users able to open the wrong
+  artifact. The credential implementation is not implicated: Electron safeStorage
+  uses macOS Keychain, which remains the platform security mechanism.
+- **Alternatives:** Continue separate Intel and Apple Silicon artifacts, or ship a
+  universal binary. Rejected because neither adds product value for the intended
+  audience, and both retain Intel code that the release does not need.
+- **Consequences:** Intel Macs cannot run Strata AI 0.1. Every shipped executable,
+  helper, framework, updater, and native library is proven arm64-only before the
+  ZIP is created. Existing local learning data and Keychain-backed credentials are
+  unchanged because the bundle identifier and storage formats remain stable.
+- **Sources:** [Apple's Rosetta support timeline and architecture identification](https://support.apple.com/102527),
+  [Apple's native execution and complete-bundle architecture guidance](https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary),
+  and [Electron safeStorage's macOS Keychain behavior](https://www.electronjs.org/docs/latest/api/safe-storage).
+- **Reversibility:** Medium; Intel support could return through a separately tested
+  artifact, but it is no longer part of the supported release contract.

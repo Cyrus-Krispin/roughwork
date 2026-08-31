@@ -12,3 +12,5 @@
 - Added versioned, owner-private learning backup export and additive atomic restore.
 - Hardened Electron permissions, navigation, CSP, database validation, app identity,
   fuses, artifact verification, and deterministic CI.
+- Changed the macOS release to Apple Silicon only and expanded artifact verification
+  to reject Intel code anywhere in the application bundle.

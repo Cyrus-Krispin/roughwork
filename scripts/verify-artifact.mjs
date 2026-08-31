@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFile, stat } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { open, readFile, stat } from 'node:fs/promises';
+import { join, relative, resolve } from 'node:path';
 
 import asar from '@electron/asar';
 import { FuseState, FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
@@ -10,15 +10,14 @@ if (process.platform !== 'darwin') {
   throw new Error('Artifact verification currently supports macOS only.');
 }
 
-const appPath = resolve(
-  process.argv[2] ?? `out/Strata AI-darwin-${process.arch}/Strata AI.app`,
+assert.equal(
+  process.arch,
+  'arm64',
+  'Verify release artifacts on Apple Silicon.',
 );
-const pathArchitecture = appPath.match(/darwin-(arm64|x64)/u)?.[1];
-const expectedArchitecture =
-  process.argv[3] ?? pathArchitecture ?? process.arch;
-if (!['arm64', 'x64'].includes(expectedArchitecture)) {
-  throw new Error('Expected architecture must be arm64 or x64.');
-}
+const appPath = resolve(
+  process.argv[2] ?? 'out/Strata AI-darwin-arm64/Strata AI.app',
+);
 const contentsPath = join(appPath, 'Contents');
 const resourcesPath = join(contentsPath, 'Resources');
 const executablePath = join(contentsPath, 'MacOS', 'Strata AI');
@@ -40,6 +39,7 @@ assert.equal(
   'public.app-category.education',
 );
 assert.equal(plistValue('LSMinimumSystemVersion'), '13.0');
+assert.equal(plistValue('LSRequiresNativeExecution'), 'true');
 assert.equal(
   plistValue('NSAppTransportSecurity.NSAllowsArbitraryLoads'),
   'false',
@@ -63,16 +63,60 @@ execFileSync(
   ['--verify', '--deep', '--strict', '--verbose=2', appPath],
   { stdio: 'pipe' },
 );
-const executableArchitectures = execFileSync(
-  'lipo',
-  ['-archs', executablePath],
-  { encoding: 'utf8' },
-)
-  .trim()
-  .split(/\s+/u);
-assert.deepEqual(executableArchitectures, [
-  expectedArchitecture === 'x64' ? 'x86_64' : 'arm64',
+const machOMagics = new Set([
+  'feedface',
+  'cefaedfe',
+  'feedfacf',
+  'cffaedfe',
+  'cafebabe',
+  'bebafeca',
+  'cafebabf',
+  'bfbafeca',
 ]);
+
+async function findMachOBinaries(rootPath) {
+  const files = execFileSync('find', [rootPath, '-type', 'f'], {
+    encoding: 'utf8',
+  })
+    .trim()
+    .split('\n')
+    .filter(Boolean);
+  const binaries = [];
+  for (const filePath of files) {
+    const handle = await open(filePath, 'r');
+    try {
+      const magic = Buffer.alloc(4);
+      const { bytesRead } = await handle.read(magic, 0, magic.length, 0);
+      if (
+        bytesRead === magic.length &&
+        machOMagics.has(magic.toString('hex'))
+      ) {
+        binaries.push(filePath);
+      }
+    } finally {
+      await handle.close();
+    }
+  }
+  return binaries;
+}
+
+const machOBinaries = await findMachOBinaries(appPath);
+assert.ok(
+  machOBinaries.length > 0,
+  'Packaged app contains no Mach-O binaries.',
+);
+for (const binaryPath of machOBinaries) {
+  const architectures = execFileSync('lipo', ['-archs', binaryPath], {
+    encoding: 'utf8',
+  })
+    .trim()
+    .split(/\s+/u);
+  assert.deepEqual(
+    architectures,
+    ['arm64'],
+    `${relative(appPath, binaryPath)} must contain only native Apple Silicon code.`,
+  );
+}
 
 const fuseWire = await getCurrentFuseWire(executablePath);
 const expectedFuses = {
@@ -134,5 +178,5 @@ assert.ok(
 );
 
 console.log(
-  `Verified Strata AI 0.1.0 (${expectedArchitecture}): architecture, identity, plist, icon, signature, fuses, and ASAR contents.`,
+  `Verified Strata AI 0.1.0 (Apple Silicon): ${machOBinaries.length} Mach-O binaries, identity, plist, icon, signature, fuses, and ASAR contents.`,
 );

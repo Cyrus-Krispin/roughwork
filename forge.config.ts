@@ -56,7 +56,11 @@ async function hardenMacArtifact(
   platform: string,
   arch: string,
 ): Promise<void> {
-  if (platform !== 'darwin') return;
+  if (platform !== 'darwin' || arch !== 'arm64') {
+    throw new Error(
+      'Strata AI release artifacts require macOS on Apple Silicon.',
+    );
+  }
 
   const contentsPath = resolve(buildPath, '..', '..');
   const infoPath = join(contentsPath, 'Info.plist');
@@ -76,7 +80,7 @@ async function hardenMacArtifact(
   await flipFuses(join(contentsPath, 'MacOS', 'Electron'), {
     version: FuseVersion.V1,
     strictlyRequireAllFuses: true,
-    resetAdHocDarwinSignature: !osxSign && arch === 'arm64',
+    resetAdHocDarwinSignature: !osxSign,
     [FuseV1Options.RunAsNode]: false,
     [FuseV1Options.EnableCookieEncryption]: true,
     [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
@@ -98,6 +102,7 @@ const config: ForgeConfig = {
     darwinDarkModeSupport: true,
     extendInfo: {
       LSMinimumSystemVersion: '13.0',
+      LSRequiresNativeExecution: true,
     },
     icon: './assets/icon',
     osxNotarize,

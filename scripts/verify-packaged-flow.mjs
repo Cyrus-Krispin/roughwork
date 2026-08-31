@@ -10,12 +10,12 @@ if (process.platform !== 'darwin') {
 }
 
 const onboardingOnly = process.argv.includes('--onboarding');
-const archArgument = process.argv.find((argument) =>
-  argument.startsWith('--arch='),
+assert.equal(
+  process.arch,
+  'arm64',
+  'Run packaged verification on Apple Silicon.',
 );
-const targetArch = archArgument?.slice('--arch='.length) || process.arch;
-assert.match(targetArch, /^(arm64|x64)$/u);
-const appPath = resolve(`out/Strata AI-darwin-${targetArch}/Strata AI.app`);
+const appPath = resolve('out/Strata AI-darwin-arm64/Strata AI.app');
 const executable = join(appPath, 'Contents', 'MacOS', 'Strata AI');
 const profile = await mkdtemp(join(tmpdir(), 'strata-packaged-flow-'));
 
@@ -45,7 +45,6 @@ child.stdout.on('data', (chunk) => (processOutput += chunk.toString()));
 child.stderr.on('data', (chunk) => (processOutput += chunk.toString()));
 
 async function waitForTarget() {
-  // The first Intel launch on Apple Silicon may spend extra time warming Rosetta.
   const deadline = Date.now() + 30_000;
   let lastTargets = [];
   while (Date.now() < deadline) {

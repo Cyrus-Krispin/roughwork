@@ -18,6 +18,14 @@ test('pins the 0.1 macOS product identity and toolchain', async () => {
     new URL('../src/main/ai/e2eProvider.ts', import.meta.url),
     'utf8',
   );
+  const artifactVerifier = await readFile(
+    new URL('../scripts/verify-artifact.mjs', import.meta.url),
+    'utf8',
+  );
+  const packagedFlow = await readFile(
+    new URL('../scripts/verify-packaged-flow.mjs', import.meta.url),
+    'utf8',
+  );
 
   assert.equal(packageJson.version, '0.1.0');
   assert.equal(packageJson.packageManager, 'npm@11.12.1');
@@ -29,6 +37,8 @@ test('pins the 0.1 macOS product identity and toolchain', async () => {
     /appCategoryType: 'public\.app-category\.education'/,
   );
   assert.match(forgeConfig, /LSMinimumSystemVersion: '13\.0'/);
+  assert.match(forgeConfig, /LSRequiresNativeExecution: true/);
+  assert.match(forgeConfig, /arch !== 'arm64'/);
   assert.match(forgeConfig, /strictlyRequireAllFuses: true/);
   assert.match(
     forgeConfig,
@@ -40,15 +50,28 @@ test('pins the 0.1 macOS product identity and toolchain', async () => {
   );
   assert.doesNotMatch(forgeConfig, /Maker(?:Deb|Rpm|Squirrel)/);
   assert.equal(
+    packageJson.scripts.package,
+    'electron-forge package --platform=darwin --arch=arm64',
+  );
+  assert.equal(
     packageJson.scripts['package:e2e'],
-    'STRATA_E2E_FAKE_PROVIDER=1 electron-forge package',
+    'STRATA_E2E_FAKE_PROVIDER=1 electron-forge package --platform=darwin --arch=arm64',
+  );
+  assert.equal(
+    packageJson.scripts.make,
+    'electron-forge make --platform=darwin --arch=arm64',
+  );
+  assert.equal(
+    packageJson.scripts['make:from-package'],
+    'electron-forge make --skip-package --platform=darwin --arch=arm64',
   );
   const workflow = await readFile(
     new URL('../.github/workflows/ci.yml', import.meta.url),
     'utf8',
   );
-  assert.match(workflow, /runner: macos-15\b/u);
-  assert.match(workflow, /runner: macos-15-intel\b/u);
+  assert.match(workflow, /runs-on: macos-15\b/u);
+  assert.doesNotMatch(workflow, /macos-15-intel/u);
+  assert.doesNotMatch(workflow, /\bx64\b/u);
   assert.doesNotMatch(workflow, /macos-14/u);
   const releaseActions = Array.from(
     workflow.matchAll(
@@ -71,6 +94,9 @@ test('pins the 0.1 macOS product identity and toolchain', async () => {
     packageJson.scripts['verify:packaged-onboarding'],
     'node scripts/verify-packaged-flow.mjs --onboarding',
   );
+  assert.doesNotMatch(packagedFlow, /\bx64\b|Rosetta/u);
+  assert.doesNotMatch(artifactVerifier, /\bx64\b|x86_64/u);
+  assert.match(artifactVerifier, /findMachOBinaries/u);
   assert.match(webpackConfig, /NormalModuleReplacementPlugin/);
   assert.match(webpackConfig, /STRATA_E2E_FAKE_PROVIDER === '1'/);
   assert.match(productionE2eProvider, /return null/);

@@ -11,15 +11,20 @@ both histories remain attributable and survive restart.
 
 ## Private alpha requirements
 
-- macOS 13 Ventura or later (Apple Silicon or Intel)
+- macOS 13 Ventura or later on an Apple Silicon Mac
 - An internet connection for the AI-backed learning actions
 - A learner-owned DeepSeek account and API key; DeepSeek may charge for usage
 
-Download the ZIP for your Mac's architecture from the release, unzip it, and
-move **Strata AI.app** to Applications. Internal alpha builds are ad-hoc signed,
-not Apple-notarized. If macOS blocks the first launch, use Finder to Control-click
-the app and choose **Open**; do not disable Gatekeeper. Compare the release version
-and artifact verification result before opening a build from another source.
+Download the Apple Silicon ZIP from the release, unzip it, and move
+**Strata AI.app** to Applications. Intel Macs are not supported. Internal alpha
+builds are ad-hoc signed, not Apple-notarized. If macOS blocks the first launch,
+use Finder to Control-click the app and choose **Open**; do not disable Gatekeeper.
+Compare the release version and artifact verification result before opening a
+build from another source.
+
+Finder's **Get Info** panel must identify the current build as **Application
+(Apple silicon)**. If macOS shows an Intel-app support warning, quit and remove any
+older Strata AI copy before installing the current Apple Silicon artifact.
 
 Export a backup from **Local data** before every upgrade. Report private-alpha
 feedback and reproducible problems through
