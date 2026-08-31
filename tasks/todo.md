@@ -30,8 +30,8 @@ Tasks are dependency-ordered. Fixtures test the AI boundary; learner-facing feed
 
 **Acceptance criteria:**
 
-- [ ] Fixtures cover demonstrated, partial, misconception, and uncertain results.
-- [ ] Invalid fixtures cover fabricated excerpts, multiple next questions, missing uncertainty, and premature answer disclosure.
+- [x] Fixtures cover demonstrated, partial, misconception, and uncertain results.
+- [x] Invalid fixtures cover fabricated excerpts, multiple next questions, missing uncertainty, and premature answer disclosure.
 - [x] Validation checks every evidence excerpt against the exact learner answer.
 
 **Verification:**

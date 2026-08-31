@@ -82,7 +82,7 @@ The first version needs loading, retry, invalid-response, missing-credential, ne
 ### Phase 1: Define and test the AI boundary
 
 - [x] Task 1: Define session states, provider interface, and validated model schemas
-- [ ] Task 2: Add contract fixtures for demonstrated, partial, misconception, uncertain, malformed, and answer-leaking outputs
+- [x] Task 2: Add contract fixtures for demonstrated, partial, misconception, uncertain, malformed, and answer-leaking outputs
 
 ### Checkpoint: AI contract
 
