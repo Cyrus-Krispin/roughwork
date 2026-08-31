@@ -1,6 +1,6 @@
 # Strata AI Architecture
 
-Status: Phase 2 local session persistence implemented; longitudinal learning remains planned.
+Status: Phase 3 adaptive learning controls implemented; longitudinal learning remains planned.
 
 ## Decision Summary
 
@@ -46,6 +46,8 @@ The first learning slice now implements these boundaries:
   evidence, and each proposed next question.
 - The renderer owns transient interaction state and hydrates it from persisted
   session records for resume and read-only review.
+- A deterministic five-level help ladder and append-only evaluation challenges
+  let learners recover when stuck or misjudged without opening unrestricted chat.
 
 ## Process Responsibilities
 
@@ -82,6 +84,8 @@ The implemented SQLite entities are:
 - `evaluations`: validated judgments, reasons, uncertainty, and next moves;
 - `evaluation_evidence`: ordered exact excerpts and findings;
 - `schema_migrations`: applied local schema versions.
+- `help_requests`: ordered, idempotent graduated-help responses per question;
+- `evaluation_challenges`: learner rationales linking prior and revised judgments.
 
 Future evidence-graph entities remain planned:
 

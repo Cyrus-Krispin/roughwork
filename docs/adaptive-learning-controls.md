@@ -1,6 +1,6 @@
 # Adaptive Learning Controls
 
-Status: Proposed for founder review
+Status: Implemented
 
 ## Objective
 
@@ -187,8 +187,8 @@ should be brief and learner-facing; model and database details stay internal.
 - The renderer shows the latest judgment and makes revision provenance available.
 - Lint, typecheck, tests, formatting, packaging, and the manual flow pass.
 
-## Open Question Requiring Approval
+## Approved Decision
 
-- Approve migration 2 adding `help_requests` and `evaluation_challenges`, use of
+- Migration 2 adds `help_requests` and `evaluation_challenges`, uses
   `evaluations.revision` for append-only challenges, and transactional updates to
   the still-unanswered next question.

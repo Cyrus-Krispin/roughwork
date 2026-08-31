@@ -25,7 +25,8 @@ export function HelpControls({
 }) {
   const current = help.at(-1)?.level;
   const currentIndex = current ? helpLevels.indexOf(current) : -1;
-  const next = helpLevels[Math.min(currentIndex + 1, helpLevels.length - 1)];
+  const next =
+    currentIndex < helpLevels.length - 1 ? helpLevels[currentIndex + 1] : null;
 
   return (
     <Box component="section" aria-label="Graduated help" sx={{ mt: 4 }}>
@@ -59,13 +60,15 @@ export function HelpControls({
             Repeat this level
           </Button>
         )}
-        <Button
-          variant="outlined"
-          disabled={busy}
-          onClick={() => onRequest(next)}
-        >
-          {busy ? 'Preparing help…' : labels[next]}
-        </Button>
+        {next && (
+          <Button
+            variant="outlined"
+            disabled={busy}
+            onClick={() => onRequest(next)}
+          >
+            {busy ? 'Preparing help…' : labels[next]}
+          </Button>
+        )}
       </Stack>
     </Box>
   );

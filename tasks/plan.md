@@ -31,50 +31,50 @@ Help and challenge contracts
 
 ## Phase 1: Lock the model boundary
 
-- [ ] Task 1: Define and test graduated-help response contracts
-- [ ] Task 2: Define and test evaluation-challenge provider behavior
+- [x] Task 1: Define and test graduated-help response contracts
+- [x] Task 2: Define and test evaluation-challenge provider behavior
 
 ### Checkpoint: Model boundary
 
-- [ ] Invalid, answer-leaking, or ungrounded output fails closed
-- [ ] Existing evaluation fixtures remain green
+- [x] Invalid, answer-leaking, or ungrounded output fails closed
+- [x] Existing evaluation fixtures remain green
 
 ## Phase 2: Persist auditable learner control
 
-- [ ] Task 3: Add the version-2 migration and history types
-- [ ] Task 4: Append and reload idempotent help requests
-- [ ] Task 5: Append evaluation revisions and challenge provenance
+- [x] Task 3: Add the version-2 migration and history types
+- [x] Task 4: Append and reload idempotent help requests
+- [x] Task 5: Append evaluation revisions and challenge provenance
 
 ### Checkpoint: Durable domain
 
-- [ ] A version-1 database migrates without rewriting existing rows
-- [ ] Help and challenge history survives database reopen
-- [ ] Duplicate retries and stale challenges cannot create conflicting history
+- [x] A version-1 database migrates without rewriting existing rows
+- [x] Help and challenge history survives database reopen
+- [x] Duplicate retries and stale challenges cannot create conflicting history
 
 ## Phase 3: Expose authoritative operations
 
-- [ ] Task 6: Enforce help ladder and challenge rules in the learning service
-- [ ] Task 7: Add strict named IPC and preload operations
-- [ ] Task 8: Extend reducer states for help, challenge, retry, and rehydration
+- [x] Task 6: Enforce help ladder and challenge rules in the learning service
+- [x] Task 7: Add strict named IPC and preload operations
+- [x] Task 8: Extend reducer states for help, challenge, retry, and rehydration
 
 ### Checkpoint: Process boundary
 
-- [ ] Invalid or unauthorized state transitions are rejected
-- [ ] Provider failures preserve learner input and acknowledged history
-- [ ] Renderer receives no new privileged capability
+- [x] Invalid or unauthorized state transitions are rejected
+- [x] Provider failures preserve learner input and acknowledged history
+- [x] Renderer receives no new privileged capability
 
 ## Phase 4: Complete the learner flow
 
-- [ ] Task 9: Add accessible help controls and response display
-- [ ] Task 10: Add challenge rationale and evaluation revision UI
-- [ ] Task 11: Show help and revision provenance in session review
+- [x] Task 9: Add accessible help controls and response display
+- [x] Task 10: Add challenge rationale and evaluation revision UI
+- [x] Task 11: Show help and revision provenance in session review
 
 ### Checkpoint: Complete
 
-- [ ] Full five-level help flow works without advancing the session
-- [ ] Latest evaluation is clear and prior revisions remain inspectable
-- [ ] Restart, offline retry, stale challenge, and ended-session flows pass
-- [ ] `npm run lint`, `npm run typecheck`, `npm test`,
+- [x] Full five-level help flow works without advancing the session
+- [x] Latest evaluation is clear and prior revisions remain inspectable
+- [x] Restart, offline retry, stale challenge, and ended-session flows pass
+- [x] `npm run lint`, `npm run typecheck`, `npm test`,
       `npm run format:check`, and `npm run package` pass
 
 ## Risks and Mitigations

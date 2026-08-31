@@ -1,5 +1,7 @@
 # Adaptive Learning Controls Checklist
 
+Status: Complete. All tasks below are implemented and verified.
+
 ## Task 1: Graduated-help contracts
 
 **Acceptance criteria:** strict five-level responses; pre-explanation levels
