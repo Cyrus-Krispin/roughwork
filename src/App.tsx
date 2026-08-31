@@ -12,7 +12,7 @@ import { FeedbackView } from './components/FeedbackView';
 import { QuestionView } from './components/QuestionView';
 import { SessionReview } from './components/SessionReview';
 import { StartView } from './components/StartView';
-import { ThinkEdgeMark } from './components/ThinkEdgeMark';
+import { StrataAiMark } from './components/StrataAiMark';
 import {
   initialLearningSession,
   learningSessionReducer,
@@ -59,7 +59,7 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    void window.thinkEdge
+    void window.strataAi
       .getProviderStatus()
       .then((status) => {
         if (active) setProvider({ loading: false, ...status });
@@ -79,7 +79,7 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    void window.thinkEdge
+    void window.strataAi
       .listSessions()
       .then((result) => {
         if (active && result.ok) setRecentSessions(result.data);
@@ -97,12 +97,12 @@ export function App() {
   }, [session.status]);
 
   async function refreshSessions(): Promise<void> {
-    const result = await window.thinkEdge.listSessions();
+    const result = await window.strataAi.listSessions();
     if (result.ok) setRecentSessions(result.data);
   }
 
   async function requestSessionStart(topic: string): Promise<void> {
-    const result = await window.thinkEdge.startSession({ topic });
+    const result = await window.strataAi.startSession({ topic });
     if (result.ok) {
       dispatch({ type: 'session_started', session: result.data });
       await refreshSessions();
@@ -138,7 +138,7 @@ export function App() {
       answer: session.answer,
     };
     dispatch({ type: 'submit' });
-    const result = await window.thinkEdge.submitAttempt(request);
+    const result = await window.strataAi.submitAttempt(request);
 
     if (result.ok) {
       dispatch({
@@ -170,7 +170,7 @@ export function App() {
 
   async function openSession(sessionId: string): Promise<void> {
     setLocalError('');
-    const result = await window.thinkEdge.getSession({ sessionId });
+    const result = await window.strataAi.getSession({ sessionId });
     if (result.ok && result.data) {
       dispatch({ type: 'session_loaded', session: result.data });
       return;
@@ -183,7 +183,7 @@ export function App() {
 
   async function endSession(): Promise<void> {
     if (!session.sessionId) return;
-    const result = await window.thinkEdge.endSession({
+    const result = await window.strataAi.endSession({
       sessionId: session.sessionId,
     });
     if (result.ok) {
@@ -196,7 +196,7 @@ export function App() {
 
   async function deleteSession(sessionId: string): Promise<void> {
     setLocalError('');
-    const result = await window.thinkEdge.deleteSession({ sessionId });
+    const result = await window.strataAi.deleteSession({ sessionId });
     if (!result.ok) setLocalError(result.error.message);
     await refreshSessions();
   }
@@ -229,11 +229,11 @@ export function App() {
           <IconButton
             color="inherit"
             onClick={returnHome}
-            aria-label="Return to ThinkEdge home"
+            aria-label="Return to Strata AI home"
             size="small"
             sx={{ p: 0.75 }}
           >
-            <ThinkEdgeMark />
+            <StrataAiMark />
           </IconButton>
           {sessionIsActive && (
             <Button

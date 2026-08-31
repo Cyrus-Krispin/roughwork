@@ -1,14 +1,14 @@
-# Implementation Plan: ThinkEdge AI Learning Loop
+# Implementation Plan: Strata AI Learning Loop
 
 ## Overview
 
-Build the smallest honest version of ThinkEdge: a learner enters a topic, an AI provider asks one diagnostic question, the learner answers in their own words, and AI returns validated evidence-based feedback plus exactly one adaptive next question. The session remains in memory for this first slice; persistence, sources, retention, and the knowledge graph follow only after the AI loop is useful.
+Build the smallest honest version of Strata AI: a learner enters a topic, an AI provider asks one diagnostic question, the learner answers in their own words, and AI returns validated evidence-based feedback plus exactly one adaptive next question. The session remains in memory for this first slice; persistence, sources, retention, and the knowledge graph follow only after the AI loop is useful.
 
 There will be no scripted learner feedback in the product. Fixtures are used only in automated tests to verify the AI contract and failure handling.
 
 ## Product Question
 
-Can ThinkEdge use AI to expose a specific gap in a learner's answer and choose a useful next question without becoming an explanatory chatbot?
+Can Strata AI use AI to expose a specific gap in a learner's answer and choose a useful next question without becoming an explanatory chatbot?
 
 ```text
 Learner names topic
@@ -113,7 +113,7 @@ The first version needs loading, retry, invalid-response, missing-credential, ne
 ### Checkpoint: First AI product slice
 
 - [ ] A learner can complete at least three genuine AI-generated turns
-- [ ] ThinkEdge never displays feedback before an attempt
+- [ ] Strata AI never displays feedback before an attempt
 - [ ] Feedback cites the learner's own words
 - [ ] Strong, partial, mistaken, and ambiguous test answers produce meaningfully different next moves
 - [ ] The system stays concise and asks one question at a time

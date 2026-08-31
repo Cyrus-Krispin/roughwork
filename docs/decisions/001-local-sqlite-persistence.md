@@ -4,7 +4,7 @@ Status: Accepted
 
 ## Context
 
-ThinkEdge needs resumable local sessions before it can build longitudinal
+Strata AI needs resumable local sessions before it can build longitudinal
 learning features. The data includes learner-authored answers and provisional
 model evaluations. Future knowledge-graph claims must remain attributable to the
 exact evidence that produced them.

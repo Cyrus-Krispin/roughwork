@@ -44,7 +44,7 @@ export type LearningError = {
 export type LearningResult<T> =
   { ok: true; data: T } | { ok: false; error: LearningError };
 
-export type ThinkEdgeApi = {
+export type StrataAiApi = {
   getProviderStatus(): Promise<{ configured: boolean; model: string }>;
   startSession(
     request: TopicRequest,
@@ -90,7 +90,7 @@ export function toPublicLearningError(error: unknown): LearningError {
     return {
       code: 'not_configured',
       message:
-        'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file, then restart ThinkEdge.',
+        'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file, then restart Strata AI.',
     };
   }
 

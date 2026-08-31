@@ -1,4 +1,4 @@
-# ThinkEdge Roadmap
+# Strata AI Roadmap
 
 This roadmap orders learning risk before breadth. Each phase should be reviewed before starting the next.
 
@@ -40,7 +40,7 @@ Decision gate: confirm that acknowledged attempts survive interruption and that 
 
 ## Phase 3: Adaptive Questioning
 
-Outcome: ThinkEdge keeps a learner at the edge of understanding across a complete session.
+Outcome: Strata AI keeps a learner at the edge of understanding across a complete session.
 
 - Probe, advance, prerequisite, and hint transitions
 - Graduated help ladder

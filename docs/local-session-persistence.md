@@ -4,7 +4,7 @@ Status: Accepted for implementation
 
 ## Objective
 
-Persist ThinkEdge learning sessions locally so a learner can close the app,
+Persist Strata AI learning sessions locally so a learner can close the app,
 resume an active session, inspect prior evidence, and delete a session without an
 account or network connection. The stored evidence must also provide stable,
 auditable provenance for a future learner knowledge graph.
@@ -25,7 +25,7 @@ mastery scores, export, automatic backups, sources, or retention scheduling.
 
 ## Assumptions
 
-- ThinkEdge is a single-user, local-first desktop application.
+- Strata AI is a single-user, local-first desktop application.
 - A session has one current question and advances one turn at a time.
 - Learner answers and accepted evaluations are historical evidence and are never
   updated in place.

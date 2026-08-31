@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import type { ThinkEdgeApi } from './learning/ipc.ts';
+import type { StrataAiApi } from './learning/ipc.ts';
 
-const thinkEdgeApi: ThinkEdgeApi = {
+const strataAiApi: StrataAiApi = {
   getProviderStatus: () => ipcRenderer.invoke('learning:provider-status'),
   startSession: (request) =>
     ipcRenderer.invoke('learning:start-session', request),
@@ -16,4 +16,4 @@ const thinkEdgeApi: ThinkEdgeApi = {
     ipcRenderer.invoke('learning:delete-session', request),
 };
 
-contextBridge.exposeInMainWorld('thinkEdge', thinkEdgeApi);
+contextBridge.exposeInMainWorld('strataAi', strataAiApi);

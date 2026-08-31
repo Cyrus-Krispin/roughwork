@@ -4,17 +4,17 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 
 import { App } from './App';
-import { thinkEdgeTheme } from './theme';
+import { strataAiTheme } from './theme';
 
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('ThinkEdge could not find its root element.');
+  throw new Error('Strata AI could not find its root element.');
 }
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ThemeProvider theme={thinkEdgeTheme}>
+    <ThemeProvider theme={strataAiTheme}>
       <CssBaseline />
       <App />
     </ThemeProvider>
