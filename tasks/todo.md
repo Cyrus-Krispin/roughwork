@@ -85,4 +85,4 @@ manual quit/resume check.
       `npm run package`, and `npm run make` pass after the final change.
 - [x] Packaged journey works with a fake provider and a fresh local profile.
 - [x] Optional live smoke uses exactly four explicit calls with fixed, non-sensitive text.
-- [ ] Pull request to `main` explains product value, risks, verification, and release prerequisites.
+- [x] Pull request to `main` explains product value, risks, verification, and release prerequisites.
