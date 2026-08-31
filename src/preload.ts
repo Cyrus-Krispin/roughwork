@@ -4,6 +4,11 @@ import type { StrataAiApi } from './learning/ipc.ts';
 
 const strataAiApi: StrataAiApi = {
   getProviderStatus: () => ipcRenderer.invoke('learning:provider-status'),
+  saveProviderCredential: (request) =>
+    ipcRenderer.invoke('learning:save-provider-credential', request),
+  removeProviderCredential: () =>
+    ipcRenderer.invoke('learning:remove-provider-credential'),
+  openDeepSeekKeys: () => ipcRenderer.invoke('learning:open-deepseek-keys'),
   startSession: (request) =>
     ipcRenderer.invoke('learning:start-session', request),
   submitAttempt: (request) =>

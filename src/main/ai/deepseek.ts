@@ -186,17 +186,12 @@ export class DeepSeekLearningProvider {
   }
 }
 
-export function createDeepSeekProviderFromEnvironment(): DeepSeekLearningProvider {
-  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-
-  if (!apiKey) {
-    throw new Error(
-      'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file.',
-    );
-  }
-
+export function createDeepSeekProvider(options: {
+  apiKey: string;
+  model?: string;
+}): DeepSeekLearningProvider {
   const client = new OpenAI({
-    apiKey,
+    apiKey: options.apiKey,
     baseURL: 'https://api.deepseek.com',
     maxRetries: 1,
     timeout: 30_000,
@@ -204,6 +199,6 @@ export function createDeepSeekProviderFromEnvironment(): DeepSeekLearningProvide
 
   return new DeepSeekLearningProvider(
     client as unknown as ChatCompletionClient,
-    process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
+    options.model?.trim() || 'deepseek-v4-flash',
   );
 }

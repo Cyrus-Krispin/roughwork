@@ -5,10 +5,28 @@ import type {
   PersistedLearningSession,
 } from './history.ts';
 import { helpLevels } from './contracts.ts';
+import { LearningFailure, type LearningErrorCode } from './errors.ts';
+
+export type ProviderCredentialSource = 'secure_store' | 'environment';
+
+export type ProviderStatus = {
+  configured: boolean;
+  model: string;
+  source: ProviderCredentialSource | null;
+  secureStorageAvailable: boolean | null;
+  hasStoredCredential: boolean;
+  problem?: string;
+};
 
 const topicRequestSchema = z
   .object({
     topic: z.string().trim().min(2).max(160),
+  })
+  .strict();
+
+const providerCredentialRequestSchema = z
+  .object({
+    apiKey: z.string().trim().min(8).max(512),
   })
   .strict();
 
@@ -58,6 +76,9 @@ const challengeRequestSchema = z
   .strict();
 
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
+export type ProviderCredentialRequest = z.infer<
+  typeof providerCredentialRequestSchema
+>;
 export type SessionRequest = z.infer<typeof sessionRequestSchema>;
 export type FeedbackAcknowledgementRequest = z.infer<
   typeof feedbackAcknowledgementRequestSchema
@@ -68,7 +89,7 @@ export type HelpRequest = z.infer<typeof helpRequestSchema>;
 export type ChallengeRequest = z.infer<typeof challengeRequestSchema>;
 
 export type LearningError = {
-  code: 'invalid_request' | 'not_configured' | 'provider_failed';
+  code: LearningErrorCode;
   message: string;
 };
 
@@ -76,7 +97,12 @@ export type LearningResult<T> =
   { ok: true; data: T } | { ok: false; error: LearningError };
 
 export type StrataAiApi = {
-  getProviderStatus(): Promise<{ configured: boolean; model: string }>;
+  getProviderStatus(): Promise<ProviderStatus>;
+  saveProviderCredential(
+    request: ProviderCredentialRequest,
+  ): Promise<LearningResult<ProviderStatus>>;
+  removeProviderCredential(): Promise<LearningResult<ProviderStatus>>;
+  openDeepSeekKeys(): Promise<void>;
   startSession(
     request: TopicRequest,
   ): Promise<LearningResult<PersistedLearningSession>>;
@@ -108,6 +134,16 @@ export function parseTopicRequest(value: unknown): TopicRequest {
   return topicRequestSchema.parse(value);
 }
 
+export function parseProviderCredentialRequest(
+  value: unknown,
+): ProviderCredentialRequest {
+  return providerCredentialRequestSchema.parse(value);
+}
+
+export function normalizeProviderApiKey(value: string): string {
+  return providerCredentialRequestSchema.shape.apiKey.parse(value);
+}
+
 export function parseSessionRequest(value: unknown): SessionRequest {
   return sessionRequestSchema.parse(value);
 }
@@ -136,14 +172,23 @@ export function parseChallengeRequest(value: unknown): ChallengeRequest {
 }
 
 export function toPublicLearningError(error: unknown): LearningError {
+  if (error instanceof LearningFailure) {
+    return {
+      code: error.publicCode,
+      message: error.publicMessage,
+    };
+  }
+
   if (
-    error instanceof Error &&
-    error.message.startsWith('DeepSeek is not configured.')
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error.status === 401 || error.status === 403)
   ) {
     return {
-      code: 'not_configured',
+      code: 'invalid_credential',
       message:
-        'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file, then restart Strata AI.',
+        'DeepSeek rejected this API key. Update it in provider settings.',
     };
   }
 

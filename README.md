@@ -76,4 +76,5 @@ Unsigned development builds are intended only for local use. Code signing and no
   directory and remains available after an app restart
 - No cloud sync, export, automatic backup, or knowledge graph yet
 - No accounts, cloud backend, or synchronization
-- Local secrets remain ignored and are never exposed to the renderer
+- Local secrets remain ignored; a key is transiently entered in the trusted renderer,
+  sent once over validated IPC, and only encrypted data is persisted

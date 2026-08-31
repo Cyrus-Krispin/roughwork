@@ -7,9 +7,9 @@ REFACTOR with mocked providers; live DeepSeek verification is opt-in and capped.
 
 **Acceptance criteria:**
 
-- [ ] Evaluation persistence records that learner feedback awaits acknowledgement.
-- [ ] Reopening returns to the exact pending feedback, answer, and revisions.
-- [ ] Continue acknowledges feedback once and activates the stored child question.
+- [x] Evaluation persistence records that learner feedback awaits acknowledgement.
+- [x] Reopening returns to the exact pending feedback, answer, and revisions.
+- [x] Continue acknowledges feedback once and activates the stored child question.
 
 **Verification:** focused repository/service/reducer tests; migrated database test;
 manual quit/resume check.
@@ -20,9 +20,9 @@ manual quit/resume check.
 
 **Acceptance criteria:**
 
-- [ ] Session lists count each attempt's latest evaluation revision.
-- [ ] Ended views count answered attempts, never the unanswered child question.
-- [ ] Challenged judgments update summaries without deleting prior provenance.
+- [x] Session lists count each attempt's latest evaluation revision.
+- [x] Ended views count answered attempts, never the unanswered child question.
+- [x] Challenged judgments update summaries without deleting prior provenance.
 
 **Verification:** repository regression tests and renderer state tests.
 
@@ -32,9 +32,9 @@ manual quit/resume check.
 
 **Acceptance criteria:**
 
-- [ ] End and review show demonstrated evidence, unresolved gaps, help use, and corrections.
-- [ ] Every claim is derived from persisted data with no provider request.
-- [ ] Empty/short sessions receive a useful, honest next action.
+- [x] End and review show demonstrated evidence, unresolved gaps, help use, and corrections.
+- [x] Every claim is derived from persisted data with no provider request.
+- [x] Empty/short sessions receive a useful, honest next action.
 
 **Verification:** pure summary tests and manual responsive/accessibility review.
 
@@ -42,8 +42,8 @@ manual quit/resume check.
 
 ## Tasks 4–7: Onboarding and visible trust
 
-- [ ] Encrypted key store with setup/remove/status IPC and tests.
-- [ ] First-run and settings UI with clear start action and privacy explanation.
+- [x] Encrypted key store with setup/remove/status IPC and tests.
+- [x] First-run and settings UI with clear start action and privacy explanation.
 - [ ] Plain-language uncertainty, next-step rationale, and evaluation revision history.
 - [ ] Explicit history error/retry state and focus/live-region behavior.
 

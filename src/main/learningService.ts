@@ -59,20 +59,21 @@ type AcknowledgeFeedbackInput = {
 
 export class LearningService {
   private readonly repository: LearningSessionRepository;
-  private readonly createProvider: () => LearningProvider;
+  private readonly createProvider: () =>
+    LearningProvider | Promise<LearningProvider>;
   private readonly sessionOperationTails = new Map<string, Promise<void>>();
 
   constructor(
     repository: LearningSessionRepository,
-    createProvider: () => LearningProvider,
+    createProvider: () => LearningProvider | Promise<LearningProvider>,
   ) {
     this.repository = repository;
     this.createProvider = createProvider;
   }
 
   async startSession(topic: string): Promise<PersistedLearningSession> {
-    const question =
-      await this.createProvider().createDiagnosticQuestion(topic);
+    const provider = await this.createProvider();
+    const question = await provider.createDiagnosticQuestion(topic);
     return this.repository.createSession(topic, question);
   }
 
@@ -109,7 +110,8 @@ export class LearningService {
         );
       }
 
-      const evaluation = await this.createProvider().evaluateAttempt({
+      const provider = await this.createProvider();
+      const evaluation = await provider.evaluateAttempt({
         topic: session.topic,
         question: turn.question,
         answer: input.answer,
@@ -150,7 +152,8 @@ export class LearningService {
         : ['rephrase'];
       if (!allowed.includes(input.level))
         throw new Error('This help level is not available yet.');
-      const response = await this.createProvider().createHelpResponse({
+      const provider = await this.createProvider();
+      const response = await provider.createHelpResponse({
         topic: session.topic,
         question: turn.question,
         level: input.level,
@@ -184,7 +187,8 @@ export class LearningService {
         latest.id !== input.evaluationId
       )
         throw new Error('The challenged evaluation is stale.');
-      const evaluation = await this.createProvider().reconsiderEvaluation({
+      const provider = await this.createProvider();
+      const evaluation = await provider.reconsiderEvaluation({
         topic: session.topic,
         question: turn.question,
         answer: turn.answer,

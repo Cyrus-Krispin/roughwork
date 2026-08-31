@@ -10,6 +10,7 @@ import type { SxProps, Theme } from '@mui/material/styles';
 
 import { FeedbackView } from './components/FeedbackView';
 import { QuestionView } from './components/QuestionView';
+import { ProviderSettings } from './components/ProviderSettings';
 import { SessionReview } from './components/SessionReview';
 import { StartView } from './components/StartView';
 import { StrataAiMark } from './components/StrataAiMark';
@@ -19,10 +20,10 @@ import {
 } from './learning/session.ts';
 import type { LearningSessionSummary } from './learning/history.ts';
 import type { HelpLevel } from './learning/contracts.ts';
+import type { LearningError, ProviderStatus } from './learning/ipc.ts';
 
-type ProviderState = {
+type ProviderState = ProviderStatus & {
   loading: boolean;
-  configured: boolean;
 };
 
 const centeredStateSx: SxProps<Theme> = {
@@ -46,6 +47,10 @@ export function App() {
   const [provider, setProvider] = useState<ProviderState>({
     loading: true,
     configured: false,
+    model: 'deepseek-v4-flash',
+    source: null,
+    secureStorageAvailable: null,
+    hasStoredCredential: false,
   });
   const [session, dispatch] = useReducer(
     learningSessionReducer,
@@ -56,6 +61,11 @@ export function App() {
   >([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [localError, setLocalError] = useState('');
+  const [providerBusy, setProviderBusy] = useState(false);
+  const [providerError, setProviderError] = useState('');
+  const [providerSettingsRequested, setProviderSettingsRequested] =
+    useState(false);
+  const [showProviderSettings, setShowProviderSettings] = useState(false);
   const [helpBusy, setHelpBusy] = useState(false);
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeError, setChallengeError] = useState('');
@@ -81,6 +91,11 @@ export function App() {
           setProvider({
             loading: false,
             configured: false,
+            model: 'deepseek-v4-flash',
+            source: null,
+            secureStorageAvailable: null,
+            hasStoredCredential: false,
+            problem: 'Provider settings could not be loaded. Reopen Strata AI.',
           });
         }
       });
@@ -119,7 +134,72 @@ export function App() {
       dispatch({ type: 'session_started', session: result.data });
       await refreshSessions();
     } else {
+      handleProviderFailure(result.error);
       dispatch({ type: 'request_failed', message: result.error.message });
+    }
+  }
+
+  function handleProviderFailure(error: LearningError): void {
+    if (!['invalid_credential', 'not_configured'].includes(error.code)) return;
+    setProviderSettingsRequested(true);
+    setProviderError(error.message);
+  }
+
+  async function saveProviderCredential(apiKey: string): Promise<boolean> {
+    setProviderBusy(true);
+    setProviderError('');
+    try {
+      const result = await window.strataAi.saveProviderCredential({ apiKey });
+      if (result.ok) {
+        setProvider({ loading: false, ...result.data });
+        setProviderSettingsRequested(!result.data.configured);
+        setShowProviderSettings(false);
+        return true;
+      }
+      setProviderError(result.error.message);
+      return false;
+    } catch {
+      setProviderError('The key could not be saved. Please try again.');
+      return false;
+    } finally {
+      setProviderBusy(false);
+    }
+  }
+
+  async function removeProviderCredential(): Promise<boolean> {
+    if (
+      !window.confirm(
+        'Remove the saved DeepSeek API key from this Mac? Local learning history will remain.',
+      )
+    ) {
+      return false;
+    }
+    setProviderBusy(true);
+    setProviderError('');
+    try {
+      const result = await window.strataAi.removeProviderCredential();
+      if (result.ok) {
+        setProvider({ loading: false, ...result.data });
+        setProviderSettingsRequested(!result.data.configured);
+        return true;
+      }
+      setProviderError(result.error.message);
+      return false;
+    } catch {
+      setProviderError('The saved key could not be removed. Please try again.');
+      return false;
+    } finally {
+      setProviderBusy(false);
+    }
+  }
+
+  async function openDeepSeekKeys(): Promise<void> {
+    try {
+      await window.strataAi.openDeepSeekKeys();
+    } catch {
+      setProviderError(
+        'Could not open DeepSeek. Visit platform.deepseek.com to create a key.',
+      );
     }
   }
 
@@ -160,6 +240,7 @@ export function App() {
       });
       await refreshSessions();
     } else {
+      handleProviderFailure(result.error);
       dispatch({ type: 'request_failed', message: result.error.message });
     }
   }
@@ -260,7 +341,10 @@ export function App() {
       dispatch({ type: 'help_persisted', session: result.data });
       setLocalError('');
       helpRequest.current = null;
-    } else setLocalError(result.error.message);
+    } else {
+      handleProviderFailure(result.error);
+      setLocalError(result.error.message);
+    }
     setHelpBusy(false);
   }
 
@@ -297,7 +381,10 @@ export function App() {
         questionId: session.questionId,
       });
       challengeRequest.current = null;
-    } else setChallengeError(result.error.message);
+    } else {
+      handleProviderFailure(result.error);
+      setChallengeError(result.error.message);
+    }
     setChallengeBusy(false);
   }
 
@@ -316,6 +403,7 @@ export function App() {
     helpBusy ||
     challengeBusy ||
     continueBusy;
+  const learningEnabled = provider.configured && !providerSettingsRequested;
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -342,27 +430,74 @@ export function App() {
           >
             <StrataAiMark />
           </IconButton>
-          {sessionIsActive && (
-            <Button
-              variant="text"
-              color="inherit"
-              type="button"
-              onClick={() => void endSession()}
-              disabled={operationBusy}
-              sx={{
-                minWidth: 0,
-                p: 0.5,
-                color: 'text.secondary',
-                fontSize: '0.8rem',
-              }}
-            >
-              End
-            </Button>
-          )}
+          <Box>
+            {showProviderSettings ? (
+              <Button
+                variant="text"
+                color="inherit"
+                type="button"
+                onClick={() => setShowProviderSettings(false)}
+              >
+                Back to session
+              </Button>
+            ) : (
+              providerSettingsRequested && (
+                <Button
+                  variant="text"
+                  color="error"
+                  type="button"
+                  onClick={() => setShowProviderSettings(true)}
+                  disabled={operationBusy}
+                  sx={{ mr: sessionIsActive ? 1 : 0 }}
+                >
+                  Update API key
+                </Button>
+              )
+            )}
+            {sessionIsActive && !showProviderSettings && (
+              <Button
+                variant="text"
+                color="inherit"
+                type="button"
+                onClick={() => void endSession()}
+                disabled={operationBusy}
+                sx={{
+                  minWidth: 0,
+                  p: 0.5,
+                  color: 'text.secondary',
+                  fontSize: '0.8rem',
+                }}
+              >
+                End
+              </Button>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
 
-      {provider.loading && (
+      {showProviderSettings && !provider.loading && (
+        <Box component="main" sx={{ px: { xs: 2.5, sm: 6 }, py: 6 }}>
+          <Box sx={{ width: 'min(100%, 56rem)', mx: 'auto' }}>
+            <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+              Update your API key.
+            </Typography>
+            <ProviderSettings
+              provider={provider}
+              busy={providerBusy}
+              error={providerError}
+              expanded
+              onExpandedChange={(expanded) => {
+                if (!expanded) setShowProviderSettings(false);
+              }}
+              onSave={saveProviderCredential}
+              onRemove={removeProviderCredential}
+              onOpenDeepSeekKeys={openDeepSeekKeys}
+            />
+          </Box>
+        </Box>
+      )}
+
+      {!showProviderSettings && provider.loading && (
         <Box component="main" sx={centeredStateSx} aria-busy="true">
           <Typography component="h1" variant="h1" sx={displayHeadingSx}>
             Getting ready…
@@ -370,25 +505,34 @@ export function App() {
         </Box>
       )}
 
-      {!provider.loading && session.status === 'idle' && (
-        <>
-          {localError && (
-            <Typography role="alert" color="error" sx={{ px: 3, pt: 2 }}>
-              {localError}
-            </Typography>
-          )}
-          <StartView
-            providerConfigured={provider.configured}
-            sessions={recentSessions}
-            historyLoading={historyLoading}
-            onStart={startSession}
-            onOpenSession={openSession}
-            onDeleteSession={deleteSession}
-          />
-        </>
-      )}
+      {!showProviderSettings &&
+        !provider.loading &&
+        session.status === 'idle' && (
+          <>
+            {localError && (
+              <Typography role="alert" color="error" sx={{ px: 3, pt: 2 }}>
+                {localError}
+              </Typography>
+            )}
+            <StartView
+              provider={provider}
+              providerBusy={providerBusy}
+              providerError={providerError}
+              learningEnabled={learningEnabled}
+              sessions={recentSessions}
+              historyLoading={historyLoading}
+              onStart={startSession}
+              onOpenSession={openSession}
+              onDeleteSession={deleteSession}
+              onSaveProviderCredential={saveProviderCredential}
+              onRemoveProviderCredential={removeProviderCredential}
+              onOpenDeepSeekKeys={openDeepSeekKeys}
+              providerSettingsInitiallyExpanded={providerSettingsRequested}
+            />
+          </>
+        )}
 
-      {session.status === 'loading_question' && (
+      {!showProviderSettings && session.status === 'loading_question' && (
         <Box
           component="main"
           sx={centeredStateSx}
@@ -412,79 +556,94 @@ export function App() {
         </Box>
       )}
 
-      {session.status === 'error' && !session.currentQuestion && (
-        <Box component="main" sx={centeredStateSx} role="alert">
-          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Couldn't load a question
-          </Typography>
-          <Typography
-            color="text.secondary"
-            sx={{ maxWidth: '38rem', mt: 3, lineHeight: 1.7 }}
-          >
-            {session.errorMessage}
-          </Typography>
-          <Button
-            variant="contained"
-            type="button"
-            onClick={retryRequest}
-            sx={{ mt: 3 }}
-          >
-            Retry
-          </Button>
-        </Box>
-      )}
+      {!showProviderSettings &&
+        session.status === 'error' &&
+        !session.currentQuestion && (
+          <Box component="main" sx={centeredStateSx} role="alert">
+            <Typography component="h1" variant="h1" sx={displayHeadingSx}>
+              Couldn't load a question
+            </Typography>
+            <Typography
+              color="text.secondary"
+              sx={{ maxWidth: '38rem', mt: 3, lineHeight: 1.7 }}
+            >
+              {session.errorMessage}
+            </Typography>
+            <Button
+              variant="contained"
+              type="button"
+              onClick={retryRequest}
+              sx={{ mt: 3 }}
+            >
+              Retry
+            </Button>
+            {providerSettingsRequested && (
+              <Button
+                variant="text"
+                type="button"
+                onClick={() => setShowProviderSettings(true)}
+                sx={{ mt: 1 }}
+              >
+                Update API key
+              </Button>
+            )}
+          </Box>
+        )}
 
-      {(['answering', 'evaluating'].includes(session.status) ||
-        (session.status === 'error' && Boolean(session.currentQuestion))) && (
-        <QuestionView
-          topic={session.topic}
-          turn={session.turn}
-          question={session.currentQuestion}
-          answer={session.answer}
-          busy={session.status === 'evaluating'}
-          error={
-            localError ||
-            (session.status === 'error' ? session.errorMessage : '')
-          }
-          canRetry={session.status === 'error'}
-          onAnswerChange={(answer) =>
-            dispatch({ type: 'answer_changed', answer })
-          }
-          onSubmit={evaluateAnswer}
-          onRetry={retryRequest}
-          help={
-            session.history.find(
-              (item) => item.questionId === session.questionId,
-            )?.help ?? []
-          }
-          helpBusy={helpBusy}
-          onRequestHelp={(level) => void requestHelp(level)}
-        />
-      )}
+      {!showProviderSettings &&
+        (['answering', 'evaluating'].includes(session.status) ||
+          (session.status === 'error' && Boolean(session.currentQuestion))) && (
+          <QuestionView
+            topic={session.topic}
+            turn={session.turn}
+            question={session.currentQuestion}
+            answer={session.answer}
+            busy={session.status === 'evaluating'}
+            error={
+              localError ||
+              (session.status === 'error' ? session.errorMessage : '')
+            }
+            canRetry={session.status === 'error'}
+            onAnswerChange={(answer) =>
+              dispatch({ type: 'answer_changed', answer })
+            }
+            onSubmit={evaluateAnswer}
+            onRetry={retryRequest}
+            help={
+              session.history.find(
+                (item) => item.questionId === session.questionId,
+              )?.help ?? []
+            }
+            helpBusy={helpBusy}
+            onRequestHelp={(level) => void requestHelp(level)}
+          />
+        )}
 
-      {session.status === 'feedback' && session.evaluation && (
-        <FeedbackView
-          topic={session.topic}
-          turn={session.turn}
-          question={session.currentQuestion}
-          answer={session.answer}
-          evaluation={session.evaluation}
-          onContinue={() => void continueSession()}
-          continueBusy={continueBusy}
-          continueError={continueError}
-          challengeBusy={challengeBusy}
-          onEnd={() => void endSession()}
-          evaluationHistory={
-            session.history.find(
-              (item) => item.questionId === session.questionId,
-            )?.evaluationHistory ?? []
-          }
-          challengeError={challengeError}
-          onChallenge={(rationale) => void challengeEvaluation(rationale)}
-        />
-      )}
+      {!showProviderSettings &&
+        session.status === 'feedback' &&
+        session.evaluation && (
+          <FeedbackView
+            topic={session.topic}
+            turn={session.turn}
+            question={session.currentQuestion}
+            answer={session.answer}
+            evaluation={session.evaluation}
+            onContinue={() => void continueSession()}
+            continueBusy={continueBusy}
+            continueError={continueError}
+            challengeBusy={challengeBusy}
+            onEnd={() => void endSession()}
+            evaluationHistory={
+              session.history.find(
+                (item) => item.questionId === session.questionId,
+              )?.evaluationHistory ?? []
+            }
+            challengeError={challengeError}
+            onChallenge={(rationale) => void challengeEvaluation(rationale)}
+          />
+        )}
 
-      {session.status === 'reviewing' && (
+      {!showProviderSettings && session.status === 'reviewing' && (
         <SessionReview
           topic={session.topic}
           turns={session.history}
@@ -492,7 +651,7 @@ export function App() {
         />
       )}
 
-      {session.status === 'ended' && (
+      {!showProviderSettings && session.status === 'ended' && (
         <SessionReview
           topic={session.topic}
           turns={session.history}

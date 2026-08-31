@@ -71,15 +71,18 @@ decisions are superseded rather than silently rewritten.
 - **Date:** 2026-08-31
 - **Decision:** Add first-run in-app DeepSeek key setup. Encrypt the credential with
   Electron `safeStorage`, keep the encrypted file in the app data directory, and
-  retain `.env` only as a development fallback. Never expose the key to React.
+  retain `.env` only as a development fallback. The key exists transiently in a
+  trusted password field and crosses one validated IPC operation; it is never
+  returned, logged, or persisted by React.
 - **Why:** A Finder-launched packaged app cannot reasonably depend on a project
   `.env`, while `safeStorage` uses the operating system's credential protection
   without adding a production dependency.
 - **Alternatives:** Plaintext settings file; a new keychain dependency; bundled
   managed credentials. They are respectively unsafe, unnecessary, or out of scope.
 - **Consequences:** Setup, replace, and remove operations cross a narrow validated
-  preload bridge. The UI discloses that explicit learning actions send content to
-  DeepSeek.
+  preload bridge. Stored operations are serialized, and encrypted state can be
+  removed even when it cannot be decrypted. The UI discloses that explicit learning
+  actions send content to DeepSeek and may incur provider charges.
 - **Reversibility:** Medium; the storage adapter can later move to a managed key.
 
 ## D006 — Spend model credits only on explicit, bounded actions

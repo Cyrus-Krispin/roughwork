@@ -23,29 +23,29 @@ metadata. The plan favors completing the existing promise over adding breadth.
 
 ### Phase 1: Durable learning loop
 
-- [ ] Task 1: Persist pending feedback and acknowledge continue explicitly
-- [ ] Task 2: Correct latest-revision session summaries and end-state counts
-- [ ] Task 3: Add deterministic evidence-based session payoff
+- [x] Task 1: Persist pending feedback and acknowledge continue explicitly
+- [x] Task 2: Correct latest-revision session summaries and end-state counts
+- [x] Task 3: Add deterministic evidence-based session payoff
 
 ### Checkpoint: Trustworthy session lifecycle
 
-- [ ] Closing after evaluation resumes at feedback
-- [ ] Continuing once activates exactly one persisted next question
-- [ ] Ending is instant, offline, and shows attributable evidence and gaps
-- [ ] Focused repository, service, reducer, and UI behavior tests pass
+- [x] Closing after evaluation resumes at feedback
+- [x] Continuing once activates exactly one persisted next question
+- [x] Ending is instant, offline, and shows attributable evidence and gaps
+- [x] Focused repository, service, reducer, and UI behavior tests pass
 
 ### Phase 2: Real-user onboarding and trust
 
-- [ ] Task 4: Add encrypted provider credential storage and validated IPC
-- [ ] Task 5: Build first-run setup and credential-management experience
+- [x] Task 4: Add encrypted provider credential storage and validated IPC
+- [x] Task 5: Build first-run setup and credential-management experience
 - [ ] Task 6: Expose uncertainty, next-move rationale, and revision provenance
 - [ ] Task 7: Make history loading errors and privacy/data flow explicit
 
 ### Checkpoint: Packaged app usability
 
-- [ ] A new user can configure, replace, and remove a key without a terminal
-- [ ] Provider credentials never enter renderer state, logs, or tracked files
-- [ ] The interface explains which explicit actions send content to DeepSeek
+- [x] A new user can configure, replace, and remove a key without a terminal
+- [x] Plaintext keys are transient, never returned/logged, and never written unencrypted
+- [x] The interface explains which explicit actions send content to DeepSeek
 - [ ] The complete UI is keyboard navigable with meaningful focus transitions
 
 ### Phase 3: Credit safety and adaptive quality
@@ -80,15 +80,15 @@ metadata. The plan favors completing the existing promise over adding breadth.
 
 ## Risks and Mitigations
 
-| Risk                                      | Impact | Mitigation                                                            |
-| ----------------------------------------- | ------ | --------------------------------------------------------------------- |
-| Migration skips or duplicates feedback    | High   | Additive state, transaction tests, version-1/2 migration fixtures     |
-| Credential is exposed to renderer or disk | High   | Main-process adapter, `safeStorage`, IPC allowlist, secret scans      |
-| Concurrent retries spend credits twice    | High   | Authoritative in-flight coalescing and SDK retries disabled           |
-| Deterministic summary overstates learning | High   | Use exact latest evidence and provisional labels; no mastery score    |
-| Build-chain advisories block release      | High   | Triage reachability and upgrade Forge safely; never force audit fixes |
-| UI polish drifts across flows             | Medium | Shared theme, compact layout vocabulary, packaged visual review       |
-| Signing credentials are unavailable       | Medium | Prepare config/docs; mark public distribution blocked until supplied  |
+| Risk                                              | Impact | Mitigation                                                            |
+| ------------------------------------------------- | ------ | --------------------------------------------------------------------- |
+| Migration skips or duplicates feedback            | High   | Additive state, transaction tests, version-1/2 migration fixtures     |
+| Credential persists in renderer or plaintext disk | High   | Transient password state, `safeStorage`, IPC allowlist, secret scans  |
+| Concurrent retries spend credits twice            | High   | Authoritative in-flight coalescing and SDK retries disabled           |
+| Deterministic summary overstates learning         | High   | Use exact latest evidence and provisional labels; no mastery score    |
+| Build-chain advisories block release              | High   | Triage reachability and upgrade Forge safely; never force audit fixes |
+| UI polish drifts across flows                     | Medium | Shared theme, compact layout vocabulary, packaged visual review       |
+| Signing credentials are unavailable               | Medium | Prepare config/docs; mark public distribution blocked until supplied  |
 
 ## Open Questions
 

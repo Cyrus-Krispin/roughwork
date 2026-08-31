@@ -3,7 +3,14 @@ import 'dotenv/config';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  safeStorage,
+  type IpcMainInvokeEvent,
+  shell,
+} from 'electron';
 import started from 'electron-squirrel-startup';
 
 import {
@@ -17,8 +24,19 @@ import {
   toPublicLearningError,
   type LearningResult,
 } from './learning/ipc.ts';
-import { createDeepSeekProviderFromEnvironment } from './main/ai/deepseek.ts';
+import { createDeepSeekProvider } from './main/ai/deepseek.ts';
 import { LearningService } from './main/learningService.ts';
+import { LearningFailure } from './learning/errors.ts';
+import {
+  isSameRendererLocation,
+  isTrustedIpcSender,
+  selectDevelopmentEnvironmentKey,
+} from './main/ipcSecurity.ts';
+import {
+  ProviderCredentialStore,
+  type ProviderCredentialCipher,
+} from './main/providerCredentialStore.ts';
+import { registerProviderIpcHandlers } from './main/providerIpc.ts';
 import { openLearningDatabase } from './main/persistence/database.ts';
 import { LearningSessionRepository } from './main/persistence/sessionRepository.ts';
 
@@ -29,8 +47,12 @@ if (started) {
   app.quit();
 }
 
+const trustedRendererIds = new Set<number>();
+
 function assertTrustedRenderer(event: IpcMainInvokeEvent): void {
-  if (event.senderFrame?.url !== MAIN_WINDOW_WEBPACK_ENTRY) {
+  if (
+    !isTrustedIpcSender(event, trustedRendererIds, MAIN_WINDOW_WEBPACK_ENTRY)
+  ) {
     throw new Error('Rejected learning request from an untrusted renderer.');
   }
 }
@@ -45,13 +67,15 @@ async function learningResult<T>(
   }
 }
 
-function registerLearningHandlers(service: LearningService): void {
-  ipcMain.handle('learning:provider-status', (event) => {
-    assertTrustedRenderer(event);
-    return {
-      configured: Boolean(process.env.DEEPSEEK_API_KEY?.trim()),
-      model: process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
-    };
+function registerLearningHandlers(
+  service: LearningService,
+  credentials: ProviderCredentialStore,
+): void {
+  registerProviderIpcHandlers(ipcMain, {
+    credentials,
+    assertTrusted: (event) =>
+      assertTrustedRenderer(event as IpcMainInvokeEvent),
+    openExternal: (url) => shell.openExternal(url),
   });
 
   ipcMain.handle('learning:start-session', (event, value) => {
@@ -137,21 +161,60 @@ function createWindow(): void {
     },
   });
 
+  const rendererId = mainWindow.webContents.id;
+  trustedRendererIds.add(rendererId);
+  mainWindow.on('closed', () => {
+    trustedRendererIds.delete(rendererId);
+  });
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!isSameRendererLocation(url, MAIN_WINDOW_WEBPACK_ENTRY)) {
+      event.preventDefault();
+    }
+  });
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+
   void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 }
 
 let learningDatabase: DatabaseSync | null = null;
 
 void app.whenReady().then(() => {
+  const credentialCipher: ProviderCredentialCipher = {
+    isAvailable: () => safeStorage.isAsyncEncryptionAvailable(),
+    encrypt: (value) => safeStorage.encryptStringAsync(value),
+    async decrypt(value) {
+      const result = await safeStorage.decryptStringAsync(value);
+      return {
+        value: result.result,
+        shouldReEncrypt: result.shouldReEncrypt,
+      };
+    },
+  };
+  const credentials = new ProviderCredentialStore({
+    filePath: join(app.getPath('userData'), 'provider-credential.json'),
+    cipher: credentialCipher,
+    environmentKey: selectDevelopmentEnvironmentKey(
+      app.isPackaged,
+      process.env.DEEPSEEK_API_KEY,
+    ),
+    model: process.env.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash',
+  });
   learningDatabase = openLearningDatabase(
     join(app.getPath('userData'), 'strata-ai.sqlite3'),
   );
   const repository = new LearningSessionRepository(learningDatabase);
-  const service = new LearningService(
-    repository,
-    createDeepSeekProviderFromEnvironment,
-  );
-  registerLearningHandlers(service);
+  const service = new LearningService(repository, async () => {
+    const credential = await credentials.getCredential();
+    if (!credential) {
+      throw new LearningFailure(
+        'not_configured',
+        'DeepSeek is not configured.',
+        'DeepSeek is not configured. Add your API key in Strata AI provider settings.',
+      );
+    }
+    return createDeepSeekProvider(credential);
+  });
+  registerLearningHandlers(service, credentials);
   createWindow();
 
   app.on('activate', () => {

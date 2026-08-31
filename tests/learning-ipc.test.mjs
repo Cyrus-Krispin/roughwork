@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   parseListSessionsRequest,
+  parseProviderCredentialRequest,
   parseHelpRequest,
   parseChallengeRequest,
   parseSessionRequest,
@@ -10,6 +11,7 @@ import {
   parseTopicRequest,
   toPublicLearningError,
 } from '../src/learning/ipc.ts';
+import { LearningFailure } from '../src/learning/errors.ts';
 
 test('trims a valid topic request', () => {
   assert.deepEqual(parseTopicRequest({ topic: '  Model training  ' }), {
@@ -19,6 +21,22 @@ test('trims a valid topic request', () => {
 
 test('rejects an empty topic request', () => {
   assert.throws(() => parseTopicRequest({ topic: '   ' }));
+});
+
+test('trims and bounds provider credentials without accepting extra fields', () => {
+  assert.deepEqual(
+    parseProviderCredentialRequest({ apiKey: '  sk-test-key  ' }),
+    {
+      apiKey: 'sk-test-key',
+    },
+  );
+  assert.throws(() => parseProviderCredentialRequest({ apiKey: 'short' }));
+  assert.throws(() =>
+    parseProviderCredentialRequest({ apiKey: 'sk-test-key', model: 'other' }),
+  );
+  assert.throws(() =>
+    parseProviderCredentialRequest({ apiKey: 'x'.repeat(513) }),
+  );
 });
 
 test('accepts bounded persisted-session requests', () => {
@@ -80,11 +98,20 @@ test('does not expose provider error details to the renderer', () => {
 
 test('explains when the local key is missing', () => {
   const result = toPublicLearningError(
-    new Error(
-      'DeepSeek is not configured. Add DEEPSEEK_API_KEY to your local .env file.',
+    new LearningFailure(
+      'not_configured',
+      'DeepSeek is not configured.',
+      'DeepSeek is not configured. Add your API key in Strata AI provider settings.',
     ),
   );
 
   assert.equal(result.code, 'not_configured');
-  assert.match(result.message, /\.env/);
+  assert.match(result.message, /provider settings/i);
+});
+
+test('turns provider authentication status into actionable key recovery', () => {
+  assert.deepEqual(toPublicLearningError({ status: 401, message: 'secret' }), {
+    code: 'invalid_credential',
+    message: 'DeepSeek rejected this API key. Update it in provider settings.',
+  });
 });
