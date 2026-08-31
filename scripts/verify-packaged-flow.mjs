@@ -327,6 +327,10 @@ try {
       `${bodyIncludes('Your learning evidence will appear here.')} && ${bodyIncludes('Deleted Database indexes session.')}`,
       'local deletion',
     );
+    await waitFor(
+      'document.activeElement?.id === "recent-sessions-heading"',
+      'post-deletion focus restoration',
+    );
     active = await activeElement();
     assert.equal(active.id, 'recent-sessions-heading');
 
