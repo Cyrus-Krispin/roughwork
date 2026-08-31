@@ -493,23 +493,13 @@ export function App() {
       )}
 
       {session.status === 'ended' && (
-        <Box component="main" sx={centeredStateSx}>
-          <Typography component="h1" variant="h1" sx={displayHeadingSx}>
-            Done
-          </Typography>
-          <Typography
-            color="text.secondary"
-            sx={{ maxWidth: '38rem', my: 4, lineHeight: 1.7 }}
-          >
-            {session.turn} {session.turn === 1 ? 'question' : 'questions'} ·{' '}
-            <Box component="strong" color="text.primary">
-              {session.topic}
-            </Box>
-          </Typography>
-          <Button variant="contained" type="button" onClick={returnHome}>
-            New topic
-          </Button>
-        </Box>
+        <SessionReview
+          topic={session.topic}
+          turns={session.history}
+          headingLabel="Session complete"
+          actionLabel="Start a new topic"
+          onDone={returnHome}
+        />
       )}
     </Box>
   );
