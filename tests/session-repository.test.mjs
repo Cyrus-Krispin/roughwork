@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   migrateLearningDatabase,
@@ -187,6 +190,54 @@ test('appends a challenge revision and updates only the unanswered child questio
     evaluation.nextQuestion,
   );
   database.close();
+});
+
+test('reloads help and challenge provenance after a database restart', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'strata-adaptive-'));
+  const path = join(directory, 'learning.sqlite3');
+  let database = openLearningDatabase(path);
+  let repository = new LearningSessionRepository(database);
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  repository.recordHelp({
+    requestId: crypto.randomUUID(),
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    response: {
+      level: 'rephrase',
+      content: 'Which lookup structure narrows the rows to inspect?',
+    },
+  });
+  const evaluated = repository.recordEvaluation({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+    evaluation,
+  });
+  repository.recordChallenge({
+    requestId: crypto.randomUUID(),
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    evaluationId: evaluated.turns[0].evaluationHistory[0].id,
+    rationale: 'The answer identifies the avoided scan.',
+    evaluation: { ...evaluation, status: 'demonstrated' },
+  });
+  database.close();
+
+  database = openLearningDatabase(path);
+  repository = new LearningSessionRepository(database);
+  const reloaded = repository.getSession(session.id);
+
+  assert.equal(reloaded.turns[0].help.length, 1);
+  assert.equal(reloaded.turns[0].evaluationHistory.length, 2);
+  assert.equal(
+    reloaded.turns[0].evaluationHistory[1].challengeRationale,
+    'The answer identifies the avoided scan.',
+  );
+  database.close();
+  rmSync(directory, { recursive: true });
 });
 
 test('atomically records immutable evidence and advances the current question', () => {

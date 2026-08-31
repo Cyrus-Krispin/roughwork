@@ -99,6 +99,30 @@ test('enforces and persists graduated help with idempotent request ids', async (
     }),
     /help level is not available/i,
   );
+  let current = saved;
+  for (const level of [
+    'smaller_question',
+    'hint',
+    'partial_example',
+    'direct_explanation',
+  ]) {
+    current = await service.requestHelp({
+      ...input,
+      requestId: crypto.randomUUID(),
+      level,
+    });
+  }
+  assert.deepEqual(
+    current.turns[0].help.map((item) => item.level),
+    [
+      'rephrase',
+      'smaller_question',
+      'hint',
+      'partial_example',
+      'direct_explanation',
+    ],
+  );
+  assert.equal(current.currentQuestionId, session.currentQuestionId);
   database.close();
 });
 
@@ -111,17 +135,20 @@ test('appends a challenged evaluation and preserves its rationale', async () => 
     answer: 'They avoid scanning every row for each lookup.',
   });
   const evaluationId = evaluated.turns[0].evaluationHistory[0].id;
-  const saved = await service.challengeEvaluation({
+  const challenge = {
     requestId: crypto.randomUUID(),
     sessionId: session.id,
     questionId: session.currentQuestionId,
     evaluationId,
     rationale: 'I identified the avoided scan.',
-  });
+  };
+  const saved = await service.challengeEvaluation(challenge);
+  const replayed = await service.challengeEvaluation(challenge);
 
   assert.equal(calls.challenges, 1);
   assert.equal(saved.turns[0].evaluationHistory.length, 2);
   assert.equal(saved.turns[0].evaluation.status, 'demonstrated');
+  assert.deepEqual(replayed, saved);
   database.close();
 });
 

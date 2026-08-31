@@ -60,6 +60,12 @@ export function App() {
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeError, setChallengeError] = useState('');
   const providerRequestPending = useRef(false);
+  const helpRequest = useRef<{ level: HelpLevel; id: string } | null>(null);
+  const challengeRequest = useRef<{
+    evaluationId: string;
+    rationale: string;
+    id: string;
+  } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -215,8 +221,11 @@ export function App() {
       return;
     setHelpBusy(true);
     setLocalError('');
+    if (helpRequest.current?.level !== level) {
+      helpRequest.current = { level, id: crypto.randomUUID() };
+    }
     const result = await window.strataAi.requestHelp({
-      requestId: crypto.randomUUID(),
+      requestId: helpRequest.current.id,
       sessionId: session.sessionId,
       questionId: session.questionId,
       level,
@@ -224,6 +233,7 @@ export function App() {
     if (result.ok) {
       dispatch({ type: 'help_persisted', session: result.data });
       setLocalError('');
+      helpRequest.current = null;
     } else setLocalError(result.error.message);
     setHelpBusy(false);
   }
@@ -236,20 +246,31 @@ export function App() {
     if (!evaluationId) return;
     setChallengeBusy(true);
     setChallengeError('');
+    if (
+      challengeRequest.current?.evaluationId !== evaluationId ||
+      challengeRequest.current.rationale !== rationale
+    ) {
+      challengeRequest.current = {
+        evaluationId,
+        rationale,
+        id: crypto.randomUUID(),
+      };
+    }
     const result = await window.strataAi.challengeEvaluation({
-      requestId: crypto.randomUUID(),
+      requestId: challengeRequest.current.id,
       sessionId: session.sessionId,
       questionId: session.questionId,
       evaluationId,
       rationale,
     });
-    if (result.ok)
+    if (result.ok) {
       dispatch({
         type: 'challenge_persisted',
         session: result.data,
         questionId: session.questionId,
       });
-    else setChallengeError(result.error.message);
+      challengeRequest.current = null;
+    } else setChallengeError(result.error.message);
     setChallengeBusy(false);
   }
 
