@@ -448,7 +448,13 @@ export class LearningSessionRepository {
                 e.next_question_rationale
          FROM questions q
          LEFT JOIN attempts a ON a.question_id = q.id
-         LEFT JOIN evaluations e ON e.attempt_id = a.id AND e.revision = 1
+         LEFT JOIN evaluations e ON e.id = (
+           SELECT latest.id
+           FROM evaluations latest
+           WHERE latest.attempt_id = a.id
+           ORDER BY latest.revision DESC
+           LIMIT 1
+         )
          WHERE q.session_id = ?
          ORDER BY q.turn_number ASC`,
       )
@@ -485,7 +491,13 @@ export class LearningSessionRepository {
          FROM learning_sessions s
          LEFT JOIN questions q ON q.session_id = s.id
          LEFT JOIN attempts a ON a.question_id = q.id
-         LEFT JOIN evaluations e ON e.attempt_id = a.id AND e.revision = 1
+         LEFT JOIN evaluations e ON e.id = (
+           SELECT latest.id
+           FROM evaluations latest
+           WHERE latest.attempt_id = a.id
+           ORDER BY latest.revision DESC
+           LIMIT 1
+         )
          GROUP BY s.id
          ORDER BY s.updated_at DESC, s.started_at DESC
          LIMIT ?`,

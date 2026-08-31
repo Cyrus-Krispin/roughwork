@@ -189,6 +189,12 @@ test('appends a challenge revision and updates only the unanswered child questio
     saved.turns[0].evaluationHistory[0].evaluation.nextQuestion,
     evaluation.nextQuestion,
   );
+  assert.deepEqual(repository.listSessions(1)[0].evaluationCounts, {
+    demonstrated: 1,
+    partial: 0,
+    misconception: 0,
+    uncertain: 0,
+  });
   database.close();
 });
 
