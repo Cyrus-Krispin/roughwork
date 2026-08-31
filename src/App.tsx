@@ -194,7 +194,7 @@ export function App() {
   }
 
   async function endSession(): Promise<void> {
-    if (!session.sessionId) return;
+    if (!session.sessionId || operationBusy) return;
     const result = await window.strataAi.endSession({
       sessionId: session.sessionId,
     });
@@ -207,7 +207,13 @@ export function App() {
   }
 
   async function continueSession(): Promise<void> {
-    if (!session.sessionId || !session.questionId || continueBusy) return;
+    if (
+      !session.sessionId ||
+      !session.questionId ||
+      continueBusy ||
+      challengeBusy
+    )
+      return;
     setContinueBusy(true);
     setContinueError('');
     const result = await window.strataAi.acknowledgeFeedback({
@@ -217,7 +223,9 @@ export function App() {
     if (result.ok) {
       dispatch({ type: 'feedback_acknowledged', session: result.data });
     } else {
-      setContinueError(result.error.message);
+      setContinueError(
+        "Couldn't open the next question. Your feedback is still here; try again.",
+      );
     }
     setContinueBusy(false);
   }
@@ -257,6 +265,7 @@ export function App() {
   }
 
   async function challengeEvaluation(rationale: string): Promise<void> {
+    if (continueBusy) return;
     const turn = session.history.find(
       (item) => item.questionId === session.questionId,
     );
@@ -293,6 +302,7 @@ export function App() {
   }
 
   function returnHome(): void {
+    if (operationBusy) return;
     dispatch({ type: 'restart' });
     setLocalError('');
     void refreshSessions();
@@ -301,6 +311,11 @@ export function App() {
   const sessionIsActive =
     Boolean(session.sessionId) &&
     !['idle', 'reviewing', 'ended'].includes(session.status);
+  const operationBusy =
+    ['loading_question', 'evaluating'].includes(session.status) ||
+    helpBusy ||
+    challengeBusy ||
+    continueBusy;
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -322,6 +337,7 @@ export function App() {
             onClick={returnHome}
             aria-label="Return to Strata AI home"
             size="small"
+            disabled={operationBusy}
             sx={{ p: 0.75 }}
           >
             <StrataAiMark />
@@ -332,6 +348,7 @@ export function App() {
               color="inherit"
               type="button"
               onClick={() => void endSession()}
+              disabled={operationBusy}
               sx={{
                 minWidth: 0,
                 p: 0.5,
@@ -455,13 +472,13 @@ export function App() {
           onContinue={() => void continueSession()}
           continueBusy={continueBusy}
           continueError={continueError}
+          challengeBusy={challengeBusy}
           onEnd={() => void endSession()}
           evaluationHistory={
             session.history.find(
               (item) => item.questionId === session.questionId,
             )?.evaluationHistory ?? []
           }
-          challengeBusy={challengeBusy}
           challengeError={challengeError}
           onChallenge={(rationale) => void challengeEvaluation(rationale)}
         />

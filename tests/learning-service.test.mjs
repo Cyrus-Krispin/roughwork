@@ -142,13 +142,80 @@ test('appends a challenged evaluation and preserves its rationale', async () => 
     evaluationId,
     rationale: 'I identified the avoided scan.',
   };
-  const saved = await service.challengeEvaluation(challenge);
-  const replayed = await service.challengeEvaluation(challenge);
+  const [saved, replayed] = await Promise.all([
+    service.challengeEvaluation(challenge),
+    service.challengeEvaluation(challenge),
+  ]);
 
   assert.equal(calls.challenges, 1);
   assert.equal(saved.turns[0].evaluationHistory.length, 2);
   assert.equal(saved.turns[0].evaluation.status, 'demonstrated');
   assert.deepEqual(replayed, saved);
+  database.close();
+});
+
+test('serializes feedback acknowledgement behind an in-flight challenge', async () => {
+  const database = openLearningDatabase(':memory:');
+  const repository = new LearningSessionRepository(database);
+  let releaseChallenge;
+  let challengeStarted;
+  const started = new Promise((resolve) => {
+    challengeStarted = resolve;
+  });
+  const gate = new Promise((resolve) => {
+    releaseChallenge = resolve;
+  });
+  const provider = {
+    async createDiagnosticQuestion() {
+      return question;
+    },
+    async evaluateAttempt() {
+      return evaluation;
+    },
+    async reconsiderEvaluation() {
+      challengeStarted();
+      await gate;
+      return { ...evaluation, status: 'demonstrated' };
+    },
+  };
+  const service = new LearningService(repository, () => provider);
+  const session = await service.startSession('Database indexes');
+  const evaluated = await service.submitAttempt({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+  });
+  const challengePromise = service.challengeEvaluation({
+    requestId: crypto.randomUUID(),
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    evaluationId: evaluated.turns[0].evaluationHistory[0].id,
+    rationale: 'I identified the avoided scan.',
+  });
+  await started;
+
+  let acknowledgementSettled = false;
+  const acknowledgementPromise = service
+    .acknowledgeFeedback({
+      sessionId: session.id,
+      questionId: session.currentQuestionId,
+    })
+    .then((result) => {
+      acknowledgementSettled = true;
+      return result;
+    });
+  await Promise.resolve();
+  assert.equal(acknowledgementSettled, false);
+
+  releaseChallenge();
+  const [challenged, acknowledged] = await Promise.all([
+    challengePromise,
+    acknowledgementPromise,
+  ]);
+
+  assert.equal(challenged.turns[0].evaluationHistory.length, 2);
+  assert.equal(acknowledged.pendingFeedbackQuestionId, null);
+  assert.equal(acknowledged.turns[0].evaluationHistory.length, 2);
   database.close();
 });
 
@@ -210,7 +277,7 @@ test('requires feedback acknowledgement before accepting the next answer', async
     /feedback.*acknowledged/i,
   );
 
-  const continued = service.acknowledgeFeedback({
+  const continued = await service.acknowledgeFeedback({
     sessionId: session.id,
     questionId: session.currentQuestionId,
   });
@@ -224,7 +291,7 @@ test('exposes local list, load, end, and delete operations without a provider ca
   const session = await service.startSession('Database indexes');
 
   assert.equal(service.getSession(session.id)?.id, session.id);
-  assert.equal(service.endSession(session.id).status, 'ended');
+  assert.equal((await service.endSession(session.id)).status, 'ended');
   assert.equal(service.listSessions(20)[0].status, 'ended');
   assert.equal(service.deleteSession(session.id), true);
   assert.equal(service.getSession(session.id), null);

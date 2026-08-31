@@ -216,7 +216,7 @@ export function FeedbackView({
               variant="contained"
               type="button"
               onClick={onContinue}
-              disabled={continueBusy}
+              disabled={continueBusy || challengeBusy}
             >
               {continueBusy ? 'Opening…' : 'Next question'}
               <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
@@ -228,6 +228,7 @@ export function FeedbackView({
               color="inherit"
               type="button"
               onClick={onEnd}
+              disabled={continueBusy || challengeBusy}
             >
               End
             </Button>
@@ -248,7 +249,7 @@ export function FeedbackView({
               label="Why should Strata reconsider?"
               value={rationale}
               onChange={(event) => setRationale(event.target.value)}
-              disabled={challengeBusy}
+              disabled={challengeBusy || continueBusy}
               sx={{ mt: 2 }}
             />
             {challengeError && (
@@ -258,7 +259,9 @@ export function FeedbackView({
             )}
             <Button
               type="button"
-              disabled={challengeBusy || rationale.trim().length < 2}
+              disabled={
+                challengeBusy || continueBusy || rationale.trim().length < 2
+              }
               onClick={() => onChallenge(rationale.trim())}
               sx={{ mt: 1.5 }}
             >
