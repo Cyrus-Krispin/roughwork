@@ -1,4 +1,4 @@
-import type { EvaluationResult } from './contracts.ts';
+import type { EvaluationResult, HelpResponse } from './contracts.ts';
 
 export type PersistedSessionStatus = 'active' | 'ended';
 
@@ -9,6 +9,23 @@ export type PersistedTurn = {
   intent: string;
   answer: string | null;
   evaluation: EvaluationResult | null;
+  evaluationHistory: PersistedEvaluationRevision[];
+  help: PersistedHelpResponse[];
+};
+
+export type PersistedEvaluationRevision = {
+  id: string;
+  revision: number;
+  evaluation: EvaluationResult;
+  challengeRationale: string | null;
+  createdAt: string;
+};
+
+export type PersistedHelpResponse = HelpResponse & {
+  id: string;
+  requestId: string;
+  ordinal: number;
+  createdAt: string;
 };
 
 export type PersistedLearningSession = {

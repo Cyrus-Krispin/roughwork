@@ -6,6 +6,8 @@ The application contains a provider-backed learning loop: topic entry, an AI
 diagnostic question, a learner answer, evidence-based AI feedback, and one
 adaptive next question. Sessions, immutable attempts, and evaluation evidence
 persist locally in SQLite and can be resumed, reviewed, ended, or deleted.
+Learners can request progressively stronger help and challenge a model judgment;
+both histories remain attributable and survive restart.
 
 ## Requirements
 
@@ -61,6 +63,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Local session persistence](docs/local-session-persistence.md)
+- [Proposed adaptive learning controls](docs/adaptive-learning-controls.md)
 - [Implementation plan](tasks/plan.md)
 - [Task checklist](tasks/todo.md)
 

@@ -8,6 +8,8 @@ import started from 'electron-squirrel-startup';
 
 import {
   parseListSessionsRequest,
+  parseHelpRequest,
+  parseChallengeRequest,
   parseSessionRequest,
   parseSubmitAttemptRequest,
   parseTopicRequest,
@@ -65,6 +67,18 @@ function registerLearningHandlers(service: LearningService): void {
       const request = parseSubmitAttemptRequest(value);
       return service.submitAttempt(request);
     });
+  });
+
+  ipcMain.handle('learning:request-help', (event, value) => {
+    assertTrustedRenderer(event);
+    return learningResult(() => service.requestHelp(parseHelpRequest(value)));
+  });
+
+  ipcMain.handle('learning:challenge-evaluation', (event, value) => {
+    assertTrustedRenderer(event);
+    return learningResult(() =>
+      service.challengeEvaluation(parseChallengeRequest(value)),
+    );
   });
 
   ipcMain.handle('learning:get-session', (event, value) => {

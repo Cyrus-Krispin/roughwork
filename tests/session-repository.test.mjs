@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { openLearningDatabase } from '../src/main/persistence/database.ts';
+import {
+  migrateLearningDatabase,
+  openLearningDatabase,
+} from '../src/main/persistence/database.ts';
 import { LearningSessionRepository } from '../src/main/persistence/sessionRepository.ts';
 
 const diagnosticQuestion = {
@@ -43,8 +50,46 @@ test('opens a migrated database with safety pragmas enabled', () => {
     .get();
   const foreignKeys = database.prepare('PRAGMA foreign_keys').get();
 
-  assert.equal(migration.version, 1);
+  assert.equal(migration.version, 2);
   assert.equal(foreignKeys.foreign_keys, 1);
+  database.close();
+});
+
+test('migrates a version-1 database without rewriting existing sessions', () => {
+  const database = new DatabaseSync(':memory:');
+  database.exec(`
+    CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL) STRICT;
+    INSERT INTO schema_migrations VALUES (1, '2026-08-30T00:00:00.000Z');
+    CREATE TABLE learning_sessions (id TEXT PRIMARY KEY) STRICT;
+    CREATE TABLE questions (id TEXT PRIMARY KEY) STRICT;
+    CREATE TABLE evaluations (id TEXT PRIMARY KEY) STRICT;
+    INSERT INTO learning_sessions VALUES ('existing-session');
+  `);
+
+  migrateLearningDatabase(database);
+
+  assert.equal(
+    database
+      .prepare('SELECT MAX(version) AS version FROM schema_migrations')
+      .get().version,
+    2,
+  );
+  assert.equal(
+    database.prepare('SELECT id FROM learning_sessions').get().id,
+    'existing-session',
+  );
+  assert.ok(
+    database
+      .prepare("SELECT name FROM sqlite_master WHERE name = 'help_requests'")
+      .get(),
+  );
+  assert.ok(
+    database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE name = 'evaluation_challenges'",
+      )
+      .get(),
+  );
   database.close();
 });
 
@@ -68,8 +113,131 @@ test('creates and reloads an active session at its current question', () => {
     intent: diagnosticQuestion.intent,
     answer: null,
     evaluation: null,
+    evaluationHistory: [],
+    help: [],
   });
   database.close();
+});
+
+test('persists ordered help and replays an acknowledged request id', () => {
+  const { database, repository } = createRepository();
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  const input = {
+    requestId: '00000000-0000-4000-8000-000000000090',
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    response: {
+      level: 'hint',
+      content: 'Focus on how the lookup avoids visiting every row.',
+    },
+  };
+
+  const first = repository.recordHelp(input);
+  const retry = repository.recordHelp(input);
+
+  assert.deepEqual(retry, first);
+  assert.equal(first.turns[0].help.length, 1);
+  assert.equal(first.turns[0].help[0].level, 'hint');
+  assert.equal(
+    database.prepare('SELECT COUNT(*) AS count FROM help_requests').get().count,
+    1,
+  );
+  database.close();
+});
+
+test('appends a challenge revision and updates only the unanswered child question', () => {
+  const { database, repository } = createRepository();
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  const evaluated = repository.recordEvaluation({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+    evaluation,
+  });
+  const challengedEvaluationId = evaluated.turns[0].evaluationHistory[0].id;
+  const revised = {
+    ...evaluation,
+    status: 'demonstrated',
+    proposedNextMove: 'advance',
+    nextQuestion: 'How can an index slow down a write?',
+    nextQuestionRationale: 'Advances to the write-side tradeoff.',
+  };
+
+  const saved = repository.recordChallenge({
+    requestId: '00000000-0000-4000-8000-000000000091',
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    evaluationId: challengedEvaluationId,
+    rationale: 'My answer identified the avoided scan.',
+    evaluation: revised,
+  });
+
+  assert.equal(saved.turns[0].evaluation.status, 'demonstrated');
+  assert.equal(saved.turns[0].evaluationHistory.length, 2);
+  assert.equal(
+    saved.turns[0].evaluationHistory[1].challengeRationale,
+    'My answer identified the avoided scan.',
+  );
+  assert.equal(saved.turns[1].question, revised.nextQuestion);
+  assert.equal(
+    saved.turns[0].evaluationHistory[0].evaluation.nextQuestion,
+    evaluation.nextQuestion,
+  );
+  database.close();
+});
+
+test('reloads help and challenge provenance after a database restart', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'strata-adaptive-'));
+  const path = join(directory, 'learning.sqlite3');
+  let database = openLearningDatabase(path);
+  let repository = new LearningSessionRepository(database);
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+  repository.recordHelp({
+    requestId: crypto.randomUUID(),
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    response: {
+      level: 'rephrase',
+      content: 'Which lookup structure narrows the rows to inspect?',
+    },
+  });
+  const evaluated = repository.recordEvaluation({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+    evaluation,
+  });
+  repository.recordChallenge({
+    requestId: crypto.randomUUID(),
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    evaluationId: evaluated.turns[0].evaluationHistory[0].id,
+    rationale: 'The answer identifies the avoided scan.',
+    evaluation: { ...evaluation, status: 'demonstrated' },
+  });
+  database.close();
+
+  database = openLearningDatabase(path);
+  repository = new LearningSessionRepository(database);
+  const reloaded = repository.getSession(session.id);
+
+  assert.equal(reloaded.turns[0].help.length, 1);
+  assert.equal(reloaded.turns[0].evaluationHistory.length, 2);
+  assert.equal(
+    reloaded.turns[0].evaluationHistory[1].challengeRationale,
+    'The answer identifies the avoided scan.',
+  );
+  database.close();
+  rmSync(directory, { recursive: true });
 });
 
 test('atomically records immutable evidence and advances the current question', () => {

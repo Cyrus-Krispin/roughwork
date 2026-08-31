@@ -67,9 +67,45 @@ const migrations = [
       CREATE INDEX sessions_updated_idx ON learning_sessions(updated_at DESC);
     `,
   },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE help_requests (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL UNIQUE,
+        session_id TEXT NOT NULL,
+        question_id TEXT NOT NULL,
+        ordinal INTEGER NOT NULL CHECK (ordinal > 0),
+        level TEXT NOT NULL CHECK (level IN ('rephrase', 'smaller_question', 'hint', 'partial_example', 'direct_explanation')),
+        content TEXT NOT NULL CHECK (length(content) BETWEEN 5 AND 1200),
+        created_at TEXT NOT NULL,
+        UNIQUE (question_id, ordinal),
+        FOREIGN KEY (session_id) REFERENCES learning_sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+      ) STRICT;
+
+      CREATE TABLE evaluation_challenges (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL UNIQUE,
+        session_id TEXT NOT NULL,
+        question_id TEXT NOT NULL,
+        challenged_evaluation_id TEXT NOT NULL,
+        resulting_evaluation_id TEXT NOT NULL UNIQUE,
+        rationale TEXT NOT NULL CHECK (length(rationale) BETWEEN 2 AND 1000),
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES learning_sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+        FOREIGN KEY (challenged_evaluation_id) REFERENCES evaluations(id) ON DELETE CASCADE,
+        FOREIGN KEY (resulting_evaluation_id) REFERENCES evaluations(id) ON DELETE CASCADE
+      ) STRICT;
+
+      CREATE INDEX help_question_idx ON help_requests(question_id, ordinal);
+      CREATE INDEX challenges_question_idx ON evaluation_challenges(question_id, created_at);
+    `,
+  },
 ] as const;
 
-function migrate(database: DatabaseSync): void {
+export function migrateLearningDatabase(database: DatabaseSync): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version INTEGER PRIMARY KEY,
@@ -108,6 +144,6 @@ export function openLearningDatabase(path: string): DatabaseSync {
   database.exec('PRAGMA busy_timeout = 5000');
   database.exec('PRAGMA synchronous = NORMAL');
   if (path !== ':memory:') database.exec('PRAGMA journal_mode = WAL');
-  migrate(database);
+  migrateLearningDatabase(database);
   return database;
 }

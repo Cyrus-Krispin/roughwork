@@ -45,8 +45,48 @@ const evaluationSchema = z
   })
   .strict();
 
+export const helpLevels = [
+  'rephrase',
+  'smaller_question',
+  'hint',
+  'partial_example',
+  'direct_explanation',
+] as const;
+
+const helpResponseSchema = z.discriminatedUnion('level', [
+  z
+    .object({ level: z.literal('rephrase'), content: shortQuestionSchema })
+    .strict(),
+  z
+    .object({
+      level: z.literal('smaller_question'),
+      content: shortQuestionSchema,
+    })
+    .strict(),
+  z
+    .object({
+      level: z.literal('hint'),
+      content: z.string().trim().min(5).max(360),
+    })
+    .strict(),
+  z
+    .object({
+      level: z.literal('partial_example'),
+      content: z.string().trim().min(5).max(600),
+    })
+    .strict(),
+  z
+    .object({
+      level: z.literal('direct_explanation'),
+      content: z.string().trim().min(5).max(1200),
+    })
+    .strict(),
+]);
+
 export type DiagnosticQuestion = z.infer<typeof diagnosticQuestionSchema>;
 export type EvaluationResult = z.infer<typeof evaluationSchema>;
+export type HelpLevel = (typeof helpLevels)[number];
+export type HelpResponse = z.infer<typeof helpResponseSchema>;
 
 function parseJsonResponse(content: string): unknown {
   if (!content.trim()) {
@@ -77,4 +117,15 @@ export function parseEvaluation(
   }
 
   return evaluation;
+}
+
+export function parseHelpResponse(
+  content: string,
+  expectedLevel: HelpLevel,
+): HelpResponse {
+  const response = helpResponseSchema.parse(parseJsonResponse(content));
+  if (response.level !== expectedLevel) {
+    throw new Error('Help response must match the requested level.');
+  }
+  return response;
 }

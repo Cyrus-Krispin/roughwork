@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   parseDiagnosticQuestion,
   parseEvaluation,
+  parseHelpResponse,
 } from '../src/learning/contracts.ts';
 
 test('accepts one concise diagnostic question', () => {
@@ -151,6 +152,43 @@ test('rejects a response with more than the allowed fields', () => {
         fullExplanation: 'Here is the complete answer...',
       }),
       answer,
+    ),
+  );
+});
+
+test('accepts a bounded help response for the requested level', () => {
+  const result = parseHelpResponse(
+    JSON.stringify({
+      level: 'hint',
+      content:
+        'Focus on what changes the search space before any rows are read.',
+    }),
+    'hint',
+  );
+
+  assert.equal(result.level, 'hint');
+});
+
+test('rejects a help response for a different level', () => {
+  assert.throws(() =>
+    parseHelpResponse(
+      JSON.stringify({
+        level: 'direct_explanation',
+        content: 'An index stores a searchable structure that points to rows.',
+      }),
+      'hint',
+    ),
+  );
+});
+
+test('requires rephrases and smaller questions to contain one question', () => {
+  assert.throws(() =>
+    parseHelpResponse(
+      JSON.stringify({
+        level: 'rephrase',
+        content: 'Think about lookup structures. What changes? Why?',
+      }),
+      'rephrase',
     ),
   );
 });

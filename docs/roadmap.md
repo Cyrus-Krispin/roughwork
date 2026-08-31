@@ -40,11 +40,14 @@ Decision gate: confirm that acknowledged attempts survive interruption and that 
 
 ## Phase 3: Adaptive Questioning
 
+Status: adaptive help and evaluation challenges implemented; session-ending
+evidence summaries remain follow-up work.
+
 Outcome: Strata AI keeps a learner at the edge of understanding across a complete session.
 
 - Probe, advance, prerequisite, and hint transitions
-- Graduated help ladder
-- Learner challenge and correction of evaluations
+- Graduated help ladder (implemented)
+- Learner challenge and correction of evaluations (implemented)
 - Session-ending evidence and unresolved-gap summary
 
 Decision gate: compare the adaptive loop with an ordinary explanatory chat and test whether it reveals more specific gaps without causing unproductive frustration.

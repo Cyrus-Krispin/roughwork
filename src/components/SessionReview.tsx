@@ -60,6 +60,30 @@ export function SessionReview({ topic, turns, onDone }: SessionReviewProps) {
                   </Typography>
                 </Box>
               )}
+              {turn.help.length > 0 && (
+                <Typography color="text.secondary" sx={{ mt: 2 }}>
+                  Help used:{' '}
+                  {turn.help
+                    .map((item) => item.level.replace('_', ' '))
+                    .join(' → ')}
+                </Typography>
+              )}
+              {turn.evaluationHistory.length > 1 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography color="text.secondary">
+                    Evaluation revisions: {turn.evaluationHistory.length}
+                  </Typography>
+                  {turn.evaluationHistory.slice(1).map((revision) => (
+                    <Typography
+                      key={revision.id}
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
+                      Challenge: {revision.challengeRationale}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
             </Box>
           ))}
         </Stack>
