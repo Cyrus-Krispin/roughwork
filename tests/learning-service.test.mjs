@@ -219,6 +219,56 @@ test('serializes feedback acknowledgement behind an in-flight challenge', async 
   database.close();
 });
 
+test('serializes deletion behind an in-flight evaluation', async () => {
+  const database = openLearningDatabase(':memory:');
+  const repository = new LearningSessionRepository(database);
+  let releaseEvaluation;
+  let evaluationStarted;
+  const started = new Promise((resolve) => {
+    evaluationStarted = resolve;
+  });
+  const gate = new Promise((resolve) => {
+    releaseEvaluation = resolve;
+  });
+  const provider = {
+    async createDiagnosticQuestion() {
+      return question;
+    },
+    async evaluateAttempt() {
+      evaluationStarted();
+      await gate;
+      return evaluation;
+    },
+  };
+  const service = new LearningService(repository, () => provider);
+  const session = await service.startSession('Database indexes');
+  const evaluationPromise = service.submitAttempt({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+  });
+  await started;
+
+  let deletionSettled = false;
+  const deletionPromise = service.deleteSession(session.id).then((result) => {
+    deletionSettled = true;
+    return result;
+  });
+  await Promise.resolve();
+  assert.equal(deletionSettled, false);
+
+  releaseEvaluation();
+  const [evaluated, deleted] = await Promise.all([
+    evaluationPromise,
+    deletionPromise,
+  ]);
+
+  assert.equal(evaluated.turns[0].evaluation.status, 'partial');
+  assert.equal(deleted, true);
+  assert.equal(service.getSession(session.id), null);
+  database.close();
+});
+
 test('does not leave a partial session when question generation fails', async () => {
   const { database, repository } = setup();
   const service = new LearningService(repository, () => ({
@@ -293,7 +343,7 @@ test('exposes local list, load, end, and delete operations without a provider ca
   assert.equal(service.getSession(session.id)?.id, session.id);
   assert.equal((await service.endSession(session.id)).status, 'ended');
   assert.equal(service.listSessions(20)[0].status, 'ended');
-  assert.equal(service.deleteSession(session.id), true);
+  assert.equal(await service.deleteSession(session.id), true);
   assert.equal(service.getSession(session.id), null);
   assert.equal(calls.questions, 1);
   assert.equal(calls.evaluations, 0);

@@ -217,8 +217,10 @@ export class LearningService {
     );
   }
 
-  deleteSession(sessionId: string): boolean {
-    return this.repository.deleteSession(sessionId);
+  async deleteSession(sessionId: string): Promise<boolean> {
+    return this.runSessionOperation(sessionId, () =>
+      this.repository.deleteSession(sessionId),
+    );
   }
 
   private async runSessionOperation<T>(
