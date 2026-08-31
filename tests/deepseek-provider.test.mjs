@@ -93,3 +93,63 @@ test('fails closed when DeepSeek returns empty content', async () => {
     /DeepSeek returned an empty response/,
   );
 });
+
+test('generates only the requested graduated-help level', async () => {
+  const client = fakeClient(
+    JSON.stringify({
+      level: 'hint',
+      content:
+        'Focus on the structure used to locate rows before scanning them.',
+    }),
+  );
+  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-flash');
+
+  const result = await provider.createHelpResponse({
+    topic: 'Database indexes',
+    question: 'Why do indexes speed up reads?',
+    level: 'hint',
+    priorHelp: [],
+  });
+
+  assert.equal(result.level, 'hint');
+  assert.match(
+    client.requests[0].messages[0].content,
+    /do not provide the complete answer/i,
+  );
+  assert.match(client.requests[0].messages[1].content, /"level":"hint"/);
+});
+
+test('reconsiders an evaluation with the learner challenge', async () => {
+  const answer =
+    'Indexes avoid scanning every row by using a lookup structure.';
+  const revised = {
+    status: 'demonstrated',
+    evidence: [
+      {
+        excerpt: 'using a lookup structure',
+        finding: 'Identifies the indexed access mechanism.',
+      },
+    ],
+    unresolvedGap: 'The learner has not discussed write costs.',
+    uncertainty: 'low',
+    proposedNextMove: 'advance',
+    nextQuestion: 'What cost does maintaining an index add to writes?',
+    nextQuestionRationale: 'Advances from read behavior to the main tradeoff.',
+  };
+  const client = fakeClient(JSON.stringify(revised));
+  const provider = new DeepSeekLearningProvider(client, 'deepseek-v4-flash');
+
+  const result = await provider.reconsiderEvaluation({
+    topic: 'Database indexes',
+    question: 'Why do indexes speed up reads?',
+    answer,
+    evaluation: { ...revised, status: 'partial' },
+    rationale: 'I did identify the lookup structure.',
+  });
+
+  assert.equal(result.status, 'demonstrated');
+  assert.match(
+    client.requests[0].messages[1].content,
+    /I did identify the lookup structure/,
+  );
+});
