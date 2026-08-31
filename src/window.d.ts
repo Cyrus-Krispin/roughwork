@@ -1,8 +1,8 @@
-import type { ThinkEdgeApi } from './learning/ipc.ts';
+import type { StrataAiApi } from './learning/ipc.ts';
 
 declare global {
   interface Window {
-    thinkEdge: ThinkEdgeApi;
+    strataAi: StrataAiApi;
   }
 }
 

@@ -1,6 +1,6 @@
-# ThinkEdge
+# Strata AI
 
-ThinkEdge is an early-stage, local-first desktop learning partner that finds the edge of a learner's understanding through adaptive Socratic questions. It asks one question at a time, evaluates the learner's own answer, and offers only the smallest useful amount of help.
+Strata AI is an early-stage, local-first desktop learning partner that finds the edge of a learner's understanding through adaptive Socratic questions. It asks one question at a time, evaluates the learner's own answer, and offers only the smallest useful amount of help.
 
 The application contains a provider-backed learning loop: topic entry, an AI
 diagnostic question, a learner answer, evidence-based AI feedback, and one
@@ -27,7 +27,7 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 `.env` and `.env.*` are ignored by Git. Only `.env.example`, which contains no
-secret, is committed. Restart ThinkEdge after changing the key.
+secret, is committed. Restart Strata AI after changing the key.
 
 Then install and start the application:
 

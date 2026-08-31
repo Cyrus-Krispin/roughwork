@@ -122,7 +122,7 @@ let learningDatabase: DatabaseSync | null = null;
 
 void app.whenReady().then(() => {
   learningDatabase = openLearningDatabase(
-    join(app.getPath('userData'), 'thinkedge.sqlite3'),
+    join(app.getPath('userData'), 'strata-ai.sqlite3'),
   );
   const repository = new LearningSessionRepository(learningDatabase);
   const service = new LearningService(

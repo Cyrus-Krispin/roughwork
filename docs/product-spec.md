@@ -1,10 +1,10 @@
-# ThinkEdge Product Specification
+# Strata AI Product Specification
 
 Status: Draft for founder review
 
 ## Objective
 
-ThinkEdge is a local-first Mac desktop application for self-directed learners who want to discover what they actually understand. A learner can start anywhere by naming a topic. Source material is optional.
+Strata AI is a local-first Mac desktop application for self-directed learners who want to discover what they actually understand. A learner can start anywhere by naming a topic. Source material is optional.
 
 The product should help the learner:
 
@@ -42,10 +42,10 @@ It intentionally does not yet include sessions, persistence, model integration, 
 The first product milestone validates one adaptive learning loop:
 
 1. The learner starts a session by naming a topic.
-2. ThinkEdge asks one diagnostic question.
+2. Strata AI asks one diagnostic question.
 3. The learner submits a text answer in their own words.
-4. ThinkEdge returns a brief, structured evaluation: demonstrated, partial, misconception, or uncertain, with a concise reason.
-5. ThinkEdge selects exactly one next move: probe, advance, revisit a prerequisite, or offer a hint.
+4. Strata AI returns a brief, structured evaluation: demonstrated, partial, misconception, or uncertain, with a concise reason.
+5. Strata AI selects exactly one next move: probe, advance, revisit a prerequisite, or offer a hint.
 6. The learner can ask for graduated help without revealing a full explanation by default.
 7. The session ends with a short evidence summary and unresolved questions.
 8. Sessions and attempts persist locally so the learner can resume and revisit them.

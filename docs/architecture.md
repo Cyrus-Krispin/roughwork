@@ -1,10 +1,10 @@
-# ThinkEdge Architecture
+# Strata AI Architecture
 
 Status: Phase 2 local session persistence implemented; longitudinal learning remains planned.
 
 ## Decision Summary
 
-ThinkEdge starts as a local-first Electron desktop application with a React and TypeScript interface. Electron's main process owns privileged operations and outbound model requests. The renderer remains sandboxed and communicates through a narrow preload bridge.
+Strata AI starts as a local-first Electron desktop application with a React and TypeScript interface. Electron's main process owns privileged operations and outbound model requests. The renderer remains sandboxed and communicates through a narrow preload bridge.
 
 The first AI integration should call a model provider directly and validate structured output. An orchestration framework and graph database are unnecessary until demonstrated complexity requires them.
 

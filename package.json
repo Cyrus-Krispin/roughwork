@@ -1,6 +1,6 @@
 {
-  "name": "think-edge",
-  "productName": "ThinkEdge",
+  "name": "strata-ai",
+  "productName": "Strata AI",
   "version": "0.0.0",
   "description": "An adaptive Socratic learning partner that finds the edge of your understanding.",
   "main": ".webpack/main",

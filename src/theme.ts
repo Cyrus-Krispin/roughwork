@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-export const thinkEdgeTheme = createTheme({
+export const strataAiTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
