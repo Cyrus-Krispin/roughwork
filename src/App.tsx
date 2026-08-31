@@ -59,6 +59,8 @@ export function App() {
   const [helpBusy, setHelpBusy] = useState(false);
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeError, setChallengeError] = useState('');
+  const [continueBusy, setContinueBusy] = useState(false);
+  const [continueError, setContinueError] = useState('');
   const providerRequestPending = useRef(false);
   const helpRequest = useRef<{ level: HelpLevel; id: string } | null>(null);
   const challengeRequest = useRef<{
@@ -202,6 +204,22 @@ export function App() {
     } else {
       setLocalError(result.error.message);
     }
+  }
+
+  async function continueSession(): Promise<void> {
+    if (!session.sessionId || !session.questionId || continueBusy) return;
+    setContinueBusy(true);
+    setContinueError('');
+    const result = await window.strataAi.acknowledgeFeedback({
+      sessionId: session.sessionId,
+      questionId: session.questionId,
+    });
+    if (result.ok) {
+      dispatch({ type: 'feedback_acknowledged', session: result.data });
+    } else {
+      setContinueError(result.error.message);
+    }
+    setContinueBusy(false);
   }
 
   async function deleteSession(sessionId: string): Promise<void> {
@@ -434,7 +452,9 @@ export function App() {
           question={session.currentQuestion}
           answer={session.answer}
           evaluation={session.evaluation}
-          onContinue={() => dispatch({ type: 'continue' })}
+          onContinue={() => void continueSession()}
+          continueBusy={continueBusy}
+          continueError={continueError}
           onEnd={() => void endSession()}
           evaluationHistory={
             session.history.find(

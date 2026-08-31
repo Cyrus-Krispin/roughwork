@@ -50,7 +50,7 @@ test('opens a migrated database with safety pragmas enabled', () => {
     .get();
   const foreignKeys = database.prepare('PRAGMA foreign_keys').get();
 
-  assert.equal(migration.version, 2);
+  assert.equal(migration.version, 3);
   assert.equal(foreignKeys.foreign_keys, 1);
   database.close();
 });
@@ -72,7 +72,7 @@ test('migrates a version-1 database without rewriting existing sessions', () => 
     database
       .prepare('SELECT MAX(version) AS version FROM schema_migrations')
       .get().version,
-    2,
+    3,
   );
   assert.equal(
     database.prepare('SELECT id FROM learning_sessions').get().id,
@@ -256,6 +256,7 @@ test('atomically records immutable evidence and advances the current question', 
 
   assert.equal(saved.turns.length, 2);
   assert.equal(saved.currentQuestionId, saved.turns[1].questionId);
+  assert.equal(saved.pendingFeedbackQuestionId, saved.turns[0].questionId);
   assert.equal(
     saved.turns[0].answer,
     'They avoid scanning every row for each lookup.',
@@ -274,6 +275,42 @@ test('atomically records immutable evidence and advances the current question', 
       }),
     /already has a different acknowledged answer/u,
   );
+  database.close();
+});
+
+test('keeps evaluated feedback pending across reload until it is acknowledged', () => {
+  const { database, repository } = createRepository();
+  const session = repository.createSession(
+    'Database indexes',
+    diagnosticQuestion,
+  );
+
+  const evaluated = repository.recordEvaluation({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+    evaluation,
+  });
+  const reloaded = repository.getSession(session.id);
+
+  assert.equal(
+    reloaded.pendingFeedbackQuestionId,
+    evaluated.turns[0].questionId,
+  );
+  assert.equal(reloaded.currentQuestionId, evaluated.turns[1].questionId);
+
+  const acknowledged = repository.acknowledgeFeedback(
+    session.id,
+    evaluated.turns[0].questionId,
+  );
+  const replayed = repository.acknowledgeFeedback(
+    session.id,
+    evaluated.turns[0].questionId,
+  );
+
+  assert.equal(acknowledged.pendingFeedbackQuestionId, null);
+  assert.equal(acknowledged.currentQuestionId, evaluated.turns[1].questionId);
+  assert.deepEqual(replayed, acknowledged);
   database.close();
 });
 

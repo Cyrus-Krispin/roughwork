@@ -38,6 +38,7 @@ export type LearningSessionEvent =
       submittedQuestionId: string;
     }
   | { type: 'session_ended'; session: PersistedLearningSession }
+  | { type: 'feedback_acknowledged'; session: PersistedLearningSession }
   | { type: 'help_persisted'; session: PersistedLearningSession }
   | {
       type: 'challenge_persisted';
@@ -49,7 +50,6 @@ export type LearningSessionEvent =
   | { type: 'evaluation_received'; evaluation: EvaluationResult }
   | { type: 'request_failed'; message: string }
   | { type: 'retry' }
-  | { type: 'continue' }
   | { type: 'end' }
   | { type: 'restart' };
 
@@ -72,6 +72,28 @@ export const initialLearningSession: LearningSession = {
 function activeSessionState(
   session: PersistedLearningSession,
 ): LearningSession {
+  if (session.pendingFeedbackQuestionId) {
+    const feedbackTurn = session.turns.find(
+      (item) => item.questionId === session.pendingFeedbackQuestionId,
+    );
+    if (!feedbackTurn?.answer || !feedbackTurn.evaluation) {
+      throw new Error('Persisted session has incomplete pending feedback.');
+    }
+    return {
+      ...initialLearningSession,
+      sessionId: session.id,
+      questionId: feedbackTurn.questionId,
+      nextQuestionId: session.currentQuestionId,
+      status: 'feedback',
+      topic: session.topic,
+      currentQuestion: feedbackTurn.question,
+      questionIntent: feedbackTurn.intent,
+      answer: feedbackTurn.answer,
+      evaluation: feedbackTurn.evaluation,
+      turn: feedbackTurn.turn,
+      history: session.turns,
+    };
+  }
   const turn = session.turns.find(
     (item) => item.questionId === session.currentQuestionId,
   );
@@ -148,6 +170,8 @@ export function learningSessionReducer(
         retryStatus: null,
         history: event.session.turns,
       };
+    case 'feedback_acknowledged':
+      return activeSessionState(event.session);
     case 'help_persisted':
       return { ...state, history: event.session.turns };
     case 'challenge_persisted': {
@@ -207,19 +231,6 @@ export function learningSessionReducer(
         ...state,
         status: state.retryStatus,
         errorMessage: '',
-      };
-    case 'continue':
-      if (state.status !== 'feedback' || !state.evaluation) return state;
-      return {
-        ...state,
-        status: 'answering',
-        questionId: state.nextQuestionId || state.questionId,
-        nextQuestionId: '',
-        currentQuestion: state.evaluation.nextQuestion,
-        questionIntent: state.evaluation.nextQuestionRationale,
-        answer: '',
-        evaluation: null,
-        turn: state.turn + 1,
       };
     case 'end':
       return { ...state, status: 'ended', errorMessage: '', retryStatus: null };

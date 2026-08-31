@@ -17,6 +17,8 @@ type FeedbackViewProps = {
   answer: string;
   evaluation: EvaluationResult;
   onContinue(): void;
+  continueBusy: boolean;
+  continueError: string;
   onEnd(): void;
   evaluationHistory: PersistedEvaluationRevision[];
   challengeBusy: boolean;
@@ -38,6 +40,8 @@ export function FeedbackView({
   answer,
   evaluation,
   onContinue,
+  continueBusy,
+  continueError,
   onEnd,
   evaluationHistory,
   challengeBusy,
@@ -208,8 +212,13 @@ export function FeedbackView({
             spacing={2}
             sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
           >
-            <Button variant="contained" type="button" onClick={onContinue}>
-              Next question
+            <Button
+              variant="contained"
+              type="button"
+              onClick={onContinue}
+              disabled={continueBusy}
+            >
+              {continueBusy ? 'Opening…' : 'Next question'}
               <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                 →
               </Box>
@@ -223,6 +232,11 @@ export function FeedbackView({
               End
             </Button>
           </Stack>
+          {continueError && (
+            <Typography role="alert" color="error" sx={{ mt: 2 }}>
+              {continueError}
+            </Typography>
+          )}
           <Box component="section" sx={{ mt: 5, maxWidth: '40rem' }}>
             <Typography component="h2" variant="h2" sx={{ fontSize: '1.2rem' }}>
               Think this judgment missed something?

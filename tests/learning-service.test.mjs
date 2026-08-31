@@ -191,6 +191,34 @@ test('evaluates the persisted current question and saves one acknowledged attemp
   database.close();
 });
 
+test('requires feedback acknowledgement before accepting the next answer', async () => {
+  const { database, service } = setup();
+  const session = await service.startSession('Database indexes');
+  const evaluated = await service.submitAttempt({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+  });
+  const nextQuestionId = evaluated.currentQuestionId;
+
+  await assert.rejects(
+    service.submitAttempt({
+      sessionId: session.id,
+      questionId: nextQuestionId,
+      answer: 'Indexes also add work to writes.',
+    }),
+    /feedback.*acknowledged/i,
+  );
+
+  const continued = service.acknowledgeFeedback({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+  });
+  assert.equal(continued.pendingFeedbackQuestionId, null);
+  assert.equal(continued.currentQuestionId, nextQuestionId);
+  database.close();
+});
+
 test('exposes local list, load, end, and delete operations without a provider call', async () => {
   const { calls, database, service } = setup();
   const session = await service.startSession('Database indexes');

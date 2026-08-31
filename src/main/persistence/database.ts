@@ -103,6 +103,17 @@ const migrations = [
       CREATE INDEX challenges_question_idx ON evaluation_challenges(question_id, created_at);
     `,
   },
+  {
+    version: 3,
+    sql: `
+      ALTER TABLE learning_sessions
+        ADD COLUMN pending_feedback_question_id TEXT
+        REFERENCES questions(id) ON DELETE SET NULL;
+
+      CREATE INDEX sessions_pending_feedback_idx
+        ON learning_sessions(pending_feedback_question_id);
+    `,
+  },
 ] as const;
 
 export function migrateLearningDatabase(database: DatabaseSync): void {

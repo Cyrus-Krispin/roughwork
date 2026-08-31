@@ -88,7 +88,22 @@ test('continues with the AI next question and clears the answer', () => {
     evaluation,
     turn: 1,
   };
-  const next = learningSessionReducer(state, { type: 'continue' });
+  const session = persistedSession('active');
+  session.currentQuestionId = '00000000-0000-4000-8000-000000000003';
+  session.turns.push({
+    questionId: session.currentQuestionId,
+    turn: 2,
+    question: evaluation.nextQuestion,
+    intent: evaluation.nextQuestionRationale,
+    answer: null,
+    evaluation: null,
+    evaluationHistory: [],
+    help: [],
+  });
+  const next = learningSessionReducer(state, {
+    type: 'feedback_acknowledged',
+    session,
+  });
 
   assert.equal(next.status, 'answering');
   assert.equal(next.currentQuestion, evaluation.nextQuestion);
@@ -124,6 +139,45 @@ test('hydrates a persisted active session at its current question', () => {
     state.currentQuestion,
     'Why do database indexes speed up reads?',
   );
+});
+
+test('hydrates unacknowledged persisted feedback before the next question', () => {
+  const session = persistedSession('active');
+  const answeredQuestionId = session.currentQuestionId;
+  session.turns[0].answer = 'They avoid scanning every row.';
+  session.turns[0].evaluation = evaluation;
+  session.turns[0].evaluationHistory = [
+    {
+      id: 'evaluation-1',
+      revision: 1,
+      evaluation,
+      challengeRationale: null,
+      createdAt: session.updatedAt,
+    },
+  ];
+  session.turns.push({
+    questionId: '00000000-0000-4000-8000-000000000003',
+    turn: 2,
+    question: evaluation.nextQuestion,
+    intent: evaluation.nextQuestionRationale,
+    answer: null,
+    evaluation: null,
+    evaluationHistory: [],
+    help: [],
+  });
+  session.currentQuestionId = session.turns[1].questionId;
+  session.pendingFeedbackQuestionId = answeredQuestionId;
+
+  const state = learningSessionReducer(initialLearningSession, {
+    type: 'session_loaded',
+    session,
+  });
+
+  assert.equal(state.status, 'feedback');
+  assert.equal(state.questionId, answeredQuestionId);
+  assert.equal(state.nextQuestionId, session.currentQuestionId);
+  assert.equal(state.answer, 'They avoid scanning every row.');
+  assert.deepEqual(state.evaluation, evaluation);
 });
 
 test('opens an ended persisted session as read-only history', () => {
@@ -174,6 +228,7 @@ function persistedSession(status) {
     updatedAt: '2026-08-30T00:05:00.000Z',
     endedAt: status === 'ended' ? '2026-08-30T00:05:00.000Z' : null,
     currentQuestionId: '00000000-0000-4000-8000-000000000002',
+    pendingFeedbackQuestionId: null,
     turns: [
       {
         questionId: '00000000-0000-4000-8000-000000000002',

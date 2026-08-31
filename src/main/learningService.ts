@@ -52,6 +52,11 @@ type SubmitAttemptInput = {
   answer: string;
 };
 
+type AcknowledgeFeedbackInput = {
+  sessionId: string;
+  questionId: string;
+};
+
 export class LearningService {
   private readonly repository: LearningSessionRepository;
   private readonly createProvider: () => LearningProvider;
@@ -89,6 +94,9 @@ export class LearningService {
       return session;
     }
 
+    if (session.pendingFeedbackQuestionId) {
+      throw new Error('Feedback must be acknowledged before continuing.');
+    }
     if (session.status !== 'active') {
       throw new Error('Learning session is not active.');
     }
@@ -113,6 +121,7 @@ export class LearningService {
     if (
       !session ||
       session.status !== 'active' ||
+      session.pendingFeedbackQuestionId ||
       session.currentQuestionId !== input.questionId
     )
       throw new Error('The question is not current for this learning session.');
@@ -158,6 +167,7 @@ export class LearningService {
     if (
       !session ||
       session.status !== 'active' ||
+      session.pendingFeedbackQuestionId !== input.questionId ||
       !turn?.answer ||
       !latest ||
       latest.id !== input.evaluationId
@@ -183,6 +193,15 @@ export class LearningService {
 
   endSession(sessionId: string): PersistedLearningSession {
     return this.repository.endSession(sessionId);
+  }
+
+  acknowledgeFeedback(
+    input: AcknowledgeFeedbackInput,
+  ): PersistedLearningSession {
+    return this.repository.acknowledgeFeedback(
+      input.sessionId,
+      input.questionId,
+    );
   }
 
   deleteSession(sessionId: string): boolean {

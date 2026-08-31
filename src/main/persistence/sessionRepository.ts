@@ -26,6 +26,7 @@ type SessionRow = {
   updated_at: string;
   ended_at: string | null;
   current_question_id: string;
+  pending_feedback_question_id: string | null;
 };
 
 type TurnRow = {
@@ -167,6 +168,9 @@ export class LearningSessionRepository {
     if (!session) throw new Error('Learning session not found.');
     if (session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id) {
+      throw new Error('Feedback must be acknowledged before continuing.');
+    }
     if (session.current_question_id !== input.questionId) {
       throw new Error('The question is not current for this learning session.');
     }
@@ -246,10 +250,11 @@ export class LearningSessionRepository {
       this.database
         .prepare(
           `UPDATE learning_sessions
-           SET current_question_id = ?, updated_at = ?
+           SET current_question_id = ?, pending_feedback_question_id = ?,
+               updated_at = ?
            WHERE id = ?`,
         )
-        .run(nextQuestionId, timestamp, input.sessionId);
+        .run(nextQuestionId, input.questionId, timestamp, input.sessionId);
     });
 
     return this.requireSession(input.sessionId);
@@ -264,6 +269,8 @@ export class LearningSessionRepository {
     const session = this.getSessionRow(input.sessionId);
     if (!session || session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id)
+      throw new Error('Feedback must be acknowledged before continuing.');
     if (session.current_question_id !== input.questionId)
       throw new Error('The question is not current for this learning session.');
     const ordinal =
@@ -303,6 +310,8 @@ export class LearningSessionRepository {
     const session = this.getSessionRow(input.sessionId);
     if (!session || session.status !== 'active')
       throw new Error('Learning session is not active.');
+    if (session.pending_feedback_question_id !== input.questionId)
+      throw new Error('The challenged evaluation is no longer current.');
     const current = this.database
       .prepare(
         `SELECT e.id, e.attempt_id, e.revision
@@ -406,6 +415,27 @@ export class LearningSessionRepository {
     return this.requireSession(sessionId);
   }
 
+  acknowledgeFeedback(
+    sessionId: string,
+    questionId: string,
+  ): PersistedLearningSession {
+    const session = this.requireSession(sessionId);
+    if (session.status !== 'active')
+      throw new Error('Learning session is not active.');
+    if (!session.pendingFeedbackQuestionId) return session;
+    if (session.pendingFeedbackQuestionId !== questionId)
+      throw new Error('This feedback is no longer awaiting acknowledgement.');
+
+    this.database
+      .prepare(
+        `UPDATE learning_sessions
+         SET pending_feedback_question_id = NULL, updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(this.now(), sessionId);
+    return this.requireSession(sessionId);
+  }
+
   getSession(sessionId: string): PersistedLearningSession | null {
     const session = this.getSessionRow(sessionId);
     if (!session) return null;
@@ -432,6 +462,7 @@ export class LearningSessionRepository {
       updatedAt: session.updated_at,
       endedAt: session.ended_at,
       currentQuestionId: session.current_question_id,
+      pendingFeedbackQuestionId: session.pending_feedback_question_id,
       turns: rows.map((row) => this.toTurn(row)),
     };
   }
@@ -491,7 +522,7 @@ export class LearningSessionRepository {
       (this.database
         .prepare(
           `SELECT id, topic, status, started_at, updated_at, ended_at,
-                  current_question_id
+                  current_question_id, pending_feedback_question_id
            FROM learning_sessions WHERE id = ?`,
         )
         .get(sessionId) as SessionRow | undefined) ?? null

@@ -18,6 +18,13 @@ const sessionRequestSchema = z
   })
   .strict();
 
+const feedbackAcknowledgementRequestSchema = z
+  .object({
+    sessionId: z.uuid(),
+    questionId: z.uuid(),
+  })
+  .strict();
+
 const submitAttemptRequestSchema = z
   .object({
     sessionId: z.uuid(),
@@ -52,6 +59,9 @@ const challengeRequestSchema = z
 
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
 export type SessionRequest = z.infer<typeof sessionRequestSchema>;
+export type FeedbackAcknowledgementRequest = z.infer<
+  typeof feedbackAcknowledgementRequestSchema
+>;
 export type SubmitAttemptRequest = z.infer<typeof submitAttemptRequestSchema>;
 export type ListSessionsRequest = z.infer<typeof listSessionsRequestSchema>;
 export type HelpRequest = z.infer<typeof helpRequestSchema>;
@@ -79,6 +89,9 @@ export type StrataAiApi = {
   challengeEvaluation(
     request: ChallengeRequest,
   ): Promise<LearningResult<PersistedLearningSession>>;
+  acknowledgeFeedback(
+    request: FeedbackAcknowledgementRequest,
+  ): Promise<LearningResult<PersistedLearningSession>>;
   getSession(
     request: SessionRequest,
   ): Promise<LearningResult<PersistedLearningSession | null>>;
@@ -97,6 +110,12 @@ export function parseTopicRequest(value: unknown): TopicRequest {
 
 export function parseSessionRequest(value: unknown): SessionRequest {
   return sessionRequestSchema.parse(value);
+}
+
+export function parseFeedbackAcknowledgementRequest(
+  value: unknown,
+): FeedbackAcknowledgementRequest {
+  return feedbackAcknowledgementRequestSchema.parse(value);
 }
 
 export function parseSubmitAttemptRequest(
