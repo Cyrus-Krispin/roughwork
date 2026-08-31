@@ -8,6 +8,9 @@ import type {
   LearningSessionSummary,
   PersistedLearningSession,
 } from '../learning/history.ts';
+import type { RecentLearningEvidence } from '../learning/providerContext.ts';
+import { LearningFailure } from '../learning/errors.ts';
+import { maximumHelpResponses } from '../learning/helpPolicy.ts';
 import type { LearningSessionRepository } from './persistence/sessionRepository.ts';
 
 type LearningProvider = {
@@ -16,6 +19,7 @@ type LearningProvider = {
     topic: string;
     question: string;
     answer: string;
+    recentEvidence: RecentLearningEvidence[];
   }): Promise<EvaluationResult>;
   createHelpResponse(context: {
     topic: string;
@@ -62,6 +66,7 @@ export class LearningService {
   private readonly createProvider: () =>
     LearningProvider | Promise<LearningProvider>;
   private readonly sessionOperationTails = new Map<string, Promise<void>>();
+  private providerOperationTail: Promise<void> = Promise.resolve();
 
   constructor(
     repository: LearningSessionRepository,
@@ -72,8 +77,10 @@ export class LearningService {
   }
 
   async startSession(topic: string): Promise<PersistedLearningSession> {
-    const provider = await this.createProvider();
-    const question = await provider.createDiagnosticQuestion(topic);
+    const question = await this.runProviderOperation(async () => {
+      const provider = await this.createProvider();
+      return provider.createDiagnosticQuestion(topic);
+    });
     return this.repository.createSession(topic, question);
   }
 
@@ -110,11 +117,29 @@ export class LearningService {
         );
       }
 
-      const provider = await this.createProvider();
-      const evaluation = await provider.evaluateAttempt({
-        topic: session.topic,
-        question: turn.question,
-        answer: input.answer,
+      const evaluation = await this.runProviderOperation(async () => {
+        const provider = await this.createProvider();
+        return provider.evaluateAttempt({
+          topic: session.topic,
+          question: turn.question,
+          answer: input.answer,
+          recentEvidence: session.turns
+            .filter(
+              (candidate) =>
+                candidate.questionId !== input.questionId &&
+                candidate.answer !== null &&
+                candidate.evaluation !== null,
+            )
+            .slice(-3)
+            .map((candidate) => ({
+              question: candidate.question,
+              status: candidate.evaluation!.status,
+              evidenceFindings: candidate.evaluation!.evidence.map(
+                (item) => item.finding,
+              ),
+              unresolvedGap: candidate.evaluation!.unresolvedGap,
+            })),
+        });
       });
       return this.repository.recordEvaluation({ ...input, evaluation });
     });
@@ -147,19 +172,34 @@ export class LearningService {
         'direct_explanation',
       ];
       const previous = turn.help.at(-1)?.level;
+      const sameLevelCount = turn.help.filter(
+        (item) => item.level === input.level,
+      ).length;
+      if (
+        turn.help.length >= maximumHelpResponses ||
+        sameLevelCount >= (input.level === 'direct_explanation' ? 1 : 2)
+      ) {
+        throw new LearningFailure(
+          'invalid_request',
+          'Help limit reached for this question.',
+          'This help level has reached its limit. Try an answer or move to the next available level.',
+        );
+      }
       const allowed = previous
         ? [previous, levels[levels.indexOf(previous) + 1]].filter(Boolean)
         : ['rephrase'];
       if (!allowed.includes(input.level))
         throw new Error('This help level is not available yet.');
-      const provider = await this.createProvider();
-      const response = await provider.createHelpResponse({
-        topic: session.topic,
-        question: turn.question,
-        level: input.level,
-        priorHelp: turn.help.map(
-          ({ level, content }) => ({ level, content }) as HelpResponse,
-        ),
+      const response = await this.runProviderOperation(async () => {
+        const provider = await this.createProvider();
+        return provider.createHelpResponse({
+          topic: session.topic,
+          question: turn.question,
+          level: input.level,
+          priorHelp: turn.help
+            .slice(-5)
+            .map(({ level, content }) => ({ level, content }) as HelpResponse),
+        });
       });
       return this.repository.recordHelp({ ...input, response });
     });
@@ -187,13 +227,23 @@ export class LearningService {
         latest.id !== input.evaluationId
       )
         throw new Error('The challenged evaluation is stale.');
-      const provider = await this.createProvider();
-      const evaluation = await provider.reconsiderEvaluation({
-        topic: session.topic,
-        question: turn.question,
-        answer: turn.answer,
-        evaluation: latest.evaluation,
-        rationale: input.rationale,
+      if (turn.evaluationHistory.length >= 3) {
+        throw new LearningFailure(
+          'invalid_request',
+          'Challenge limit reached for this answer.',
+          'This answer has reached the reconsideration limit. Continue with the latest saved judgment.',
+        );
+      }
+      const answer = turn.answer;
+      const evaluation = await this.runProviderOperation(async () => {
+        const provider = await this.createProvider();
+        return provider.reconsiderEvaluation({
+          topic: session.topic,
+          question: turn.question,
+          answer,
+          evaluation: latest.evaluation,
+          rationale: input.rationale,
+        });
       });
       return this.repository.recordChallenge({ ...input, evaluation });
     });
@@ -249,5 +299,14 @@ export class LearningService {
         this.sessionOperationTails.delete(sessionId);
       }
     }
+  }
+
+  private runProviderOperation<T>(work: () => Promise<T>): Promise<T> {
+    const operation = this.providerOperationTail.then(work, work);
+    this.providerOperationTail = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   }
 }

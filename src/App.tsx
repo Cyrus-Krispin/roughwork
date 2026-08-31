@@ -22,6 +22,7 @@ import type { LearningSessionSummary } from './learning/history.ts';
 import type { HelpLevel } from './learning/contracts.ts';
 import type { LearningError, ProviderStatus } from './learning/ipc.ts';
 import { deleteLocalSession } from './learning/historyOperations.ts';
+import { ProviderRequestGate } from './learning/providerRequestGate.ts';
 
 type ProviderState = ProviderStatus & {
   loading: boolean;
@@ -73,7 +74,7 @@ export function App() {
   const [challengeError, setChallengeError] = useState('');
   const [continueBusy, setContinueBusy] = useState(false);
   const [continueError, setContinueError] = useState('');
-  const providerRequestPending = useRef(false);
+  const [providerRequestGate] = useState(() => new ProviderRequestGate());
   const helpRequest = useRef<{ level: HelpLevel; id: string } | null>(null);
   const challengeRequest = useRef<{
     evaluationId: string;
@@ -237,14 +238,7 @@ export function App() {
   }
 
   async function runProviderRequest(work: () => Promise<void>): Promise<void> {
-    if (providerRequestPending.current) return;
-
-    providerRequestPending.current = true;
-    try {
-      await work();
-    } finally {
-      providerRequestPending.current = false;
-    }
+    await providerRequestGate.run(work);
   }
 
   async function startSession(topic: string): Promise<void> {
@@ -360,6 +354,10 @@ export function App() {
   }
 
   async function requestHelp(level: HelpLevel): Promise<void> {
+    await runProviderRequest(() => performHelpRequest(level));
+  }
+
+  async function performHelpRequest(level: HelpLevel): Promise<void> {
     if (
       level === 'direct_explanation' &&
       !window.confirm(
@@ -390,6 +388,10 @@ export function App() {
   }
 
   async function challengeEvaluation(rationale: string): Promise<void> {
+    await runProviderRequest(() => performChallengeEvaluation(rationale));
+  }
+
+  async function performChallengeEvaluation(rationale: string): Promise<void> {
     if (continueBusy) return;
     const turn = session.history.find(
       (item) => item.questionId === session.questionId,
@@ -618,7 +620,7 @@ export function App() {
               onClick={retryRequest}
               sx={{ mt: 3 }}
             >
-              Retry
+              Retry · uses AI
             </Button>
             {providerSettingsRequested && (
               <Button
@@ -642,6 +644,7 @@ export function App() {
             question={session.currentQuestion}
             answer={session.answer}
             busy={session.status === 'evaluating'}
+            aiBusy={session.status === 'evaluating' || helpBusy}
             error={
               localError ||
               (session.status === 'error' ? session.errorMessage : '')
@@ -657,7 +660,7 @@ export function App() {
                 (item) => item.questionId === session.questionId,
               )?.help ?? []
             }
-            helpBusy={helpBusy}
+            helpBusy={helpBusy || session.status === 'evaluating'}
             onRequestHelp={(level) => void requestHelp(level)}
           />
         )}

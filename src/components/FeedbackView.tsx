@@ -56,6 +56,7 @@ export function FeedbackView({
   const headingRef = useRef<HTMLHeadingElement>(null);
   const previousRevisionCount = useRef(evaluationHistory.length);
   const presentedRevisions = presentEvaluationRevisions(evaluationHistory);
+  const challengeLimitReached = evaluationHistory.length >= 3;
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -380,7 +381,12 @@ export function FeedbackView({
               label="Why should Strata reconsider?"
               value={rationale}
               onChange={(event) => setRationale(event.target.value)}
-              disabled={challengeBusy || continueBusy}
+              disabled={challengeBusy || continueBusy || challengeLimitReached}
+              helperText={
+                challengeLimitReached
+                  ? 'Reconsideration limit reached for this answer.'
+                  : 'Submitting a challenge uses AI.'
+              }
               sx={{ mt: 2 }}
             />
             {challengeError && (
@@ -391,7 +397,10 @@ export function FeedbackView({
             <Button
               type="button"
               disabled={
-                challengeBusy || continueBusy || rationale.trim().length < 2
+                challengeBusy ||
+                continueBusy ||
+                rationale.trim().length < 2 ||
+                challengeLimitReached
               }
               onClick={() => onChallenge(rationale.trim())}
               sx={{ mt: 1.5 }}

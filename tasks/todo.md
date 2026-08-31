@@ -44,8 +44,8 @@ manual quit/resume check.
 
 - [x] Encrypted key store with setup/remove/status IPC and tests.
 - [x] First-run and settings UI with clear start action and privacy explanation.
-- [ ] Plain-language uncertainty, next-step rationale, and evaluation revision history.
-- [ ] Explicit history error/retry state and focus/live-region behavior.
+- [x] Plain-language uncertainty, next-step rationale, and evaluation revision history.
+- [x] Explicit history error/retry state and focus/live-region behavior.
 
 **Verification:** boundary tests, mocked component/flow tests, secret scan, packaged UI review.
 
@@ -53,9 +53,9 @@ manual quit/resume check.
 
 ## Tasks 8–10: Credit-safe adaptation
 
-- [ ] Disable SDK retries and coalesce concurrent main-process operations.
-- [ ] Add bounded recent-turn context to evaluation prompts.
-- [ ] Cap repeated help/context and clarify when an action makes a new AI request.
+- [x] Disable SDK retries and serialize concurrent main-process provider operations.
+- [x] Add bounded recent-turn context to evaluation prompts.
+- [x] Cap repeated help/context and clarify when an action makes a new AI request.
 
 **Verification:** concurrent fake-provider tests, prompt contract tests, no network.
 

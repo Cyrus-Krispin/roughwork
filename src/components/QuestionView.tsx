@@ -14,6 +14,7 @@ type QuestionViewProps = {
   question: string;
   answer: string;
   busy: boolean;
+  aiBusy: boolean;
   error: string;
   canRetry: boolean;
   onAnswerChange(answer: string): void;
@@ -30,6 +31,7 @@ export function QuestionView({
   question,
   answer,
   busy,
+  aiBusy,
   error,
   canRetry,
   onAnswerChange,
@@ -41,7 +43,7 @@ export function QuestionView({
 }: QuestionViewProps) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!busy && answer.trim()) void onSubmit();
+    if (!aiBusy && answer.trim()) void onSubmit();
   }
 
   return (
@@ -107,10 +109,10 @@ export function QuestionView({
             <Button
               variant="contained"
               type="submit"
-              disabled={busy || !answer.trim()}
+              disabled={aiBusy || !answer.trim()}
               sx={{ minHeight: '3rem', width: { xs: '100%', sm: 'auto' } }}
             >
-              {busy ? 'Checking…' : 'Check'}
+              {busy ? 'Checking…' : 'Check answer · uses AI'}
               {!busy && (
                 <Box component="span" aria-hidden="true" sx={{ ml: 2 }}>
                   →
@@ -133,7 +135,7 @@ export function QuestionView({
                   type="button"
                   onClick={() => void onRetry()}
                 >
-                  Try again
+                  Try again · uses AI
                 </Button>
               ) : undefined
             }

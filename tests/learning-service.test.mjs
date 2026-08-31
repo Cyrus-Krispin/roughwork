@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import {
+  getHelpPolicy,
+  maximumHelpResponses,
+} from '../src/learning/helpPolicy.ts';
 import { LearningService } from '../src/main/learningService.ts';
 import { openLearningDatabase } from '../src/main/persistence/database.ts';
 import { LearningSessionRepository } from '../src/main/persistence/sessionRepository.ts';
@@ -24,6 +28,33 @@ const evaluation = {
   nextQuestion: 'What costs does an index add to writes?',
   nextQuestionRationale: 'Probes the missing tradeoff in the answer.',
 };
+
+test('help policy reserves a final direct explanation after all repeats', () => {
+  const repeatedEarlierLevels = [
+    'rephrase',
+    'rephrase',
+    'smaller_question',
+    'smaller_question',
+    'hint',
+    'hint',
+    'partial_example',
+    'partial_example',
+  ].map((level) => ({ level }));
+
+  const beforeDirectExplanation = getHelpPolicy(repeatedEarlierLevels);
+  assert.equal(maximumHelpResponses, 9);
+  assert.equal(beforeDirectExplanation.next, 'direct_explanation');
+  assert.equal(beforeDirectExplanation.canAdvance, true);
+  assert.equal(beforeDirectExplanation.terminal, false);
+
+  const afterDirectExplanation = getHelpPolicy([
+    ...repeatedEarlierLevels,
+    { level: 'direct_explanation' },
+  ]);
+  assert.equal(afterDirectExplanation.canRepeat, false);
+  assert.equal(afterDirectExplanation.canAdvance, false);
+  assert.equal(afterDirectExplanation.terminal, true);
+});
 
 function setup() {
   const database = openLearningDatabase(':memory:');
@@ -285,6 +316,41 @@ test('does not leave a partial session when question generation fails', async ()
   database.close();
 });
 
+test('allows only one provider operation at a time across sessions', async () => {
+  const database = openLearningDatabase(':memory:');
+  const repository = new LearningSessionRepository(database);
+  let activeCalls = 0;
+  let maximumActiveCalls = 0;
+  let releaseFirst;
+  const firstGate = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
+  let calls = 0;
+  const provider = {
+    async createDiagnosticQuestion() {
+      calls += 1;
+      activeCalls += 1;
+      maximumActiveCalls = Math.max(maximumActiveCalls, activeCalls);
+      if (calls === 1) await firstGate;
+      activeCalls -= 1;
+      return question;
+    },
+  };
+  const service = new LearningService(repository, () => provider);
+
+  const first = service.startSession('Indexes');
+  await new Promise((resolve) => setImmediate(resolve));
+  const second = service.startSession('Transactions');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls, 1);
+
+  releaseFirst();
+  await Promise.all([first, second]);
+  assert.equal(calls, 2);
+  assert.equal(maximumActiveCalls, 1);
+  database.close();
+});
+
 test('evaluates the persisted current question and saves one acknowledged attempt', async () => {
   const { calls, database, service } = setup();
   const session = await service.startSession('Database indexes');
@@ -302,9 +368,99 @@ test('evaluates the persisted current question and saves one acknowledged attemp
     topic: 'Database indexes',
     question: question.question,
     answer: input.answer,
+    recentEvidence: [],
   });
   assert.deepEqual(retried, saved);
   assert.equal(saved.turns[0].answer, input.answer);
+  database.close();
+});
+
+test('adapts with only the latest three bounded evidence summaries', async () => {
+  const { calls, database, service } = setup();
+  let current = await service.startSession('Database indexes');
+
+  for (let index = 0; index < 5; index += 1) {
+    const answeredQuestionId = current.currentQuestionId;
+    current = await service.submitAttempt({
+      sessionId: current.id,
+      questionId: answeredQuestionId,
+      answer: `Turn ${index + 1}: indexes avoid scanning every row.`,
+    });
+    if (index < 4) {
+      current = await service.acknowledgeFeedback({
+        sessionId: current.id,
+        questionId: answeredQuestionId,
+      });
+    }
+  }
+
+  const context = calls.contexts.at(-1);
+  assert.equal(context.recentEvidence.length, 3);
+  assert.deepEqual(
+    context.recentEvidence.map((item) => item.status),
+    ['partial', 'partial', 'partial'],
+  );
+  assert.ok(
+    context.recentEvidence.every(
+      (item) =>
+        !('answer' in item) &&
+        item.evidenceFindings.length === 1 &&
+        item.question.length <= 140,
+    ),
+  );
+  database.close();
+});
+
+test('caps repeated help before another provider call', async () => {
+  const { calls, database, service } = setup();
+  const session = await service.startSession('Database indexes');
+  const base = {
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    level: 'rephrase',
+  };
+
+  await service.requestHelp({ ...base, requestId: crypto.randomUUID() });
+  await service.requestHelp({ ...base, requestId: crypto.randomUUID() });
+  await assert.rejects(
+    service.requestHelp({ ...base, requestId: crypto.randomUUID() }),
+    /help limit/i,
+  );
+
+  assert.equal(calls.help, 2);
+  database.close();
+});
+
+test('caps evaluation reconsiderations before another provider call', async () => {
+  const { calls, database, service } = setup();
+  const session = await service.startSession('Database indexes');
+  let current = await service.submitAttempt({
+    sessionId: session.id,
+    questionId: session.currentQuestionId,
+    answer: 'They avoid scanning every row for each lookup.',
+  });
+
+  for (let index = 0; index < 2; index += 1) {
+    current = await service.challengeEvaluation({
+      requestId: crypto.randomUUID(),
+      sessionId: session.id,
+      questionId: session.currentQuestionId,
+      evaluationId: current.turns[0].evaluationHistory.at(-1).id,
+      rationale: `Please reconsider reason ${index + 1}.`,
+    });
+  }
+
+  await assert.rejects(
+    service.challengeEvaluation({
+      requestId: crypto.randomUUID(),
+      sessionId: session.id,
+      questionId: session.currentQuestionId,
+      evaluationId: current.turns[0].evaluationHistory.at(-1).id,
+      rationale: 'Please reconsider once more.',
+    }),
+    /challenge limit/i,
+  );
+  assert.equal(calls.challenges, 2);
   database.close();
 });
 

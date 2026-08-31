@@ -38,8 +38,8 @@ metadata. The plan favors completing the existing promise over adding breadth.
 
 - [x] Task 4: Add encrypted provider credential storage and validated IPC
 - [x] Task 5: Build first-run setup and credential-management experience
-- [ ] Task 6: Expose uncertainty, next-move rationale, and revision provenance
-- [ ] Task 7: Make history loading errors and privacy/data flow explicit
+- [x] Task 6: Expose uncertainty, next-move rationale, and revision provenance
+- [x] Task 7: Make history loading errors and privacy/data flow explicit
 
 ### Checkpoint: Packaged app usability
 
@@ -50,16 +50,16 @@ metadata. The plan favors completing the existing promise over adding breadth.
 
 ### Phase 3: Credit safety and adaptive quality
 
-- [ ] Task 8: Disable automatic provider retries and coalesce concurrent requests
-- [ ] Task 9: Pass bounded recent evidence into adaptive evaluation
-- [ ] Task 10: Bound repeated help and show clear cost-conscious actions
+- [x] Task 8: Disable automatic provider retries and coalesce concurrent requests
+- [x] Task 9: Pass bounded recent evidence into adaptive evaluation
+- [x] Task 10: Bound repeated help and show clear cost-conscious actions
 
 ### Checkpoint: Bounded provider behavior
 
-- [ ] Concurrent identical operations cause one provider call
-- [ ] Retry behavior is explicit and tested with fakes
-- [ ] Context contains only the bounded recent turns needed for adaptation
-- [ ] No automated test requires a DeepSeek key or network call
+- [x] Concurrent identical operations cause one provider call
+- [x] Retry behavior is explicit and tested with fakes
+- [x] Context contains only the bounded recent turns needed for adaptation
+- [x] No automated test requires a DeepSeek key or network call
 
 ### Phase 4: Release hardening
 

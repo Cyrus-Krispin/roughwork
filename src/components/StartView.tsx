@@ -140,7 +140,7 @@ export function StartView({
             }
             sx={{ mt: 3 }}
           >
-            Start session
+            Start session · uses AI
           </Button>
         </Box>
         <Box
@@ -157,7 +157,10 @@ export function StartView({
                 color="inherit"
                 type="button"
                 disabled={!learningEnabled || providerBusy}
-                onClick={() => void onStart(suggestion)}
+                onClick={() => {
+                  setTopic(suggestion);
+                  topicInputRef.current?.focus();
+                }}
                 sx={{ color: 'text.secondary', fontSize: '0.78rem' }}
               >
                 {suggestion}

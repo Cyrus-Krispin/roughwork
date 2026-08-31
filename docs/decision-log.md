@@ -131,3 +131,22 @@ decisions are superseded rather than silently rewritten.
   distribution still requires the owner's Apple signing/notarization credentials.
 - **Reversibility:** Low for the version number and bundle identity; both should be
   treated as stable once distributed.
+
+## D009 — Adapt from bounded persisted evidence
+
+- **Status:** Accepted
+- **Date:** 2026-08-31
+- **Decision:** Give evaluation at most the three latest prior questions, provisional
+  statuses, evidence findings, and unresolved gaps. Do not resend prior raw answers.
+  Send at most five prior help responses, allow two responses per help level (one
+  direct explanation), cap help at nine responses per question, and allow two
+  evaluation reconsiderations per answer. Run only one provider operation at a time.
+- **Why:** Recent evidence makes follow-up questions genuinely adaptive without
+  allowing session length, repeated clicks, or SDK behavior to create unbounded
+  context and credit spend.
+- **Alternatives:** Send the full transcript or summarize it with another model call.
+  Rejected because both scale cost with session length and increase disclosure.
+- **Consequences:** The UI labels every action that uses AI and explains when a
+  per-question limit is reached. Older evidence remains available locally in review
+  but does not enter the current prompt.
+- **Reversibility:** High; bounds can change after measured private-alpha use.

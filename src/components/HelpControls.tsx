@@ -3,7 +3,8 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { helpLevels, type HelpLevel } from '../learning/contracts.ts';
+import type { HelpLevel } from '../learning/contracts.ts';
+import { getHelpPolicy, maximumHelpResponses } from '../learning/helpPolicy.ts';
 import type { PersistedHelpResponse } from '../learning/history.ts';
 
 const labels: Record<HelpLevel, string> = {
@@ -23,10 +24,8 @@ export function HelpControls({
   busy: boolean;
   onRequest(level: HelpLevel): void;
 }) {
-  const current = help.at(-1)?.level;
-  const currentIndex = current ? helpLevels.indexOf(current) : -1;
-  const next =
-    currentIndex < helpLevels.length - 1 ? helpLevels[currentIndex + 1] : null;
+  const { current, next, canRepeat, canAdvance, terminal } =
+    getHelpPolicy(help);
 
   return (
     <Box component="section" aria-label="Graduated help" sx={{ mt: 4 }}>
@@ -55,21 +54,27 @@ export function HelpControls({
         spacing={1.5}
         sx={{ mt: 2 }}
       >
-        {current && (
+        {current && canRepeat && (
           <Button disabled={busy} onClick={() => onRequest(current)}>
-            Repeat this level
+            Repeat this level · uses AI
           </Button>
         )}
-        {next && (
+        {next && canAdvance && (
           <Button
             variant="outlined"
             disabled={busy}
             onClick={() => onRequest(next)}
           >
-            {busy ? 'Preparing help…' : labels[next]}
+            {busy ? 'Preparing help…' : `${labels[next]} · uses AI`}
           </Button>
         )}
       </Stack>
+      {(help.length >= maximumHelpResponses || terminal) && (
+        <Typography color="text.secondary" sx={{ mt: 2, fontSize: '0.8rem' }}>
+          No further help levels are available for this question. Try an answer
+          when you are ready.
+        </Typography>
+      )}
     </Box>
   );
 }
