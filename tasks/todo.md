@@ -1,133 +1,88 @@
-# Adaptive Learning Controls Checklist
+# Strata AI 0.1 Checklist
 
-Status: Complete. All tasks below are implemented and verified.
+Tasks are dependency-ordered. Every behavioral change follows RED → GREEN →
+REFACTOR with mocked providers; live DeepSeek verification is opt-in and capped.
 
-## Task 1: Graduated-help contracts
+## Task 1: Persist pending feedback
 
-**Acceptance criteria:** strict five-level responses; pre-explanation levels
-reject answer dumps; question levels contain exactly one question.
+**Acceptance criteria:**
 
-**Verification:** `npm test -- tests/learning-contracts.test.mjs`
+- [ ] Evaluation persistence records that learner feedback awaits acknowledgement.
+- [ ] Reopening returns to the exact pending feedback, answer, and revisions.
+- [ ] Continue acknowledges feedback once and activates the stored child question.
 
-**Dependencies:** None
+**Verification:** focused repository/service/reducer tests; migrated database test;
+manual quit/resume check.
 
-**Files:** `src/learning/contracts.ts`, `tests/learning-contracts.test.mjs`
+**Dependencies:** None. **Scope:** Medium (4–5 files).
 
-## Task 2: Provider help and challenge operations
+## Task 2: Correct summaries and counts
 
-**Acceptance criteria:** bounded prompts; challenge includes immutable context;
-all outputs pass strict parsers.
+**Acceptance criteria:**
 
-**Verification:** `npm test -- tests/deepseek-provider.test.mjs`
+- [ ] Session lists count each attempt's latest evaluation revision.
+- [ ] Ended views count answered attempts, never the unanswered child question.
+- [ ] Challenged judgments update summaries without deleting prior provenance.
 
-**Dependencies:** Task 1
+**Verification:** repository regression tests and renderer state tests.
 
-**Files:** `src/main/ai/deepseek.ts`, `tests/deepseek-provider.test.mjs`
+**Dependencies:** Task 1. **Scope:** Small (2–3 files).
 
-## Task 3: Version-2 schema and public history
+## Task 3: Deliver the session payoff
 
-**Acceptance criteria:** additive migration; version-1 data preserved; types
-represent help requests and evaluation revisions without claiming mastery.
+**Acceptance criteria:**
 
-**Verification:** `npm test -- tests/session-repository.test.mjs`
+- [ ] End and review show demonstrated evidence, unresolved gaps, help use, and corrections.
+- [ ] Every claim is derived from persisted data with no provider request.
+- [ ] Empty/short sessions receive a useful, honest next action.
 
-**Dependencies:** Task 1; founder schema approval
+**Verification:** pure summary tests and manual responsive/accessibility review.
 
-**Files:** `src/main/persistence/database.ts`, `src/learning/history.ts`,
-`tests/session-repository.test.mjs`
+**Dependencies:** Task 2. **Scope:** Medium (3–5 files).
 
-## Task 4: Durable help repository
+## Tasks 4–7: Onboarding and visible trust
 
-**Acceptance criteria:** append permitted level with a unique client request ID;
-replay acknowledged request; reload ordered history after database reopen.
+- [ ] Encrypted key store with setup/remove/status IPC and tests.
+- [ ] First-run and settings UI with clear start action and privacy explanation.
+- [ ] Plain-language uncertainty, next-step rationale, and evaluation revision history.
+- [ ] Explicit history error/retry state and focus/live-region behavior.
 
-**Verification:** `npm test -- tests/session-repository.test.mjs`
+**Verification:** boundary tests, mocked component/flow tests, secret scan, packaged UI review.
 
-**Dependencies:** Task 3
+**Dependencies:** Task 3. **Scope:** Four small/medium increments.
 
-**Files:** `src/main/persistence/sessionRepository.ts`,
-`tests/session-repository.test.mjs`
+## Tasks 8–10: Credit-safe adaptation
 
-## Task 5: Durable challenge revisions
+- [ ] Disable SDK retries and coalesce concurrent main-process operations.
+- [ ] Add bounded recent-turn context to evaluation prompts.
+- [ ] Cap repeated help/context and clarify when an action makes a new AI request.
 
-**Acceptance criteria:** append one revision transactionally; retain original
-evaluation and evidence; reject stale revision; update only an unanswered child
-question; replay acknowledged client request ID.
+**Verification:** concurrent fake-provider tests, prompt contract tests, no network.
 
-**Verification:** `npm test -- tests/session-repository.test.mjs`
+**Dependencies:** Provider setup can proceed independently after its contract is fixed.
+**Scope:** Three small/medium increments.
 
-**Dependencies:** Task 3
+## Tasks 11–15: Release hardening
 
-**Files:** `src/main/persistence/sessionRepository.ts`,
-`tests/session-repository.test.mjs`
+- [ ] Explicit navigation, popup, permission, and external-content denial.
+- [ ] Version 0.1.0, stable bundle identity, clean plist metadata, changelog, privacy,
+      release, signing/notarization, and rollback documentation.
+- [ ] CI runs clean install, lint, typecheck, tests, formatting, audit triage, and package.
+- [ ] Local session export/backup plus database recovery guidance.
+- [ ] Mocked component and packaged critical-flow checks cover onboarding, retry,
+      pending feedback, help, challenge, end summary, deletion, and keyboard use.
 
-## Task 6: Authoritative service rules
+**Verification:** full deterministic gate, clean artifact, audit report, independent review.
 
-**Acceptance criteria:** enforce current question, help progression, latest
-evaluation, active session, and idempotent acknowledged results.
+**Dependencies:** Tasks 1–10. **Scope:** Five focused increments.
 
-**Verification:** `npm test -- tests/learning-service.test.mjs`
+## Final release-candidate gate
 
-**Dependencies:** Tasks 2, 4, 5
-
-**Files:** `src/main/learningService.ts`, `tests/learning-service.test.mjs`
-
-## Task 7: Narrow IPC bridge
-
-**Acceptance criteria:** strict request schemas; named help/challenge methods;
-generic safe errors; trusted sender checks remain in force.
-
-**Verification:** `npm test -- tests/learning-ipc.test.mjs`
-
-**Dependencies:** Task 6
-
-**Files:** `src/learning/ipc.ts`, `src/index.ts`, `src/preload.ts`,
-`src/window.d.ts`, `tests/learning-ipc.test.mjs`
-
-## Task 8: Interaction state
-
-**Acceptance criteria:** help and challenge loading/retry states preserve answer
-and rationale; rehydration restores acknowledged history.
-
-**Verification:** `npm test -- tests/learning-session.test.mjs`
-
-**Dependencies:** Task 7
-
-**Files:** `src/learning/session.ts`, `tests/learning-session.test.mjs`
-
-## Task 9: Help interface
-
-**Acceptance criteria:** clear next permitted level; no automatic escalation;
-accessible loading, response, retry, and direct-explanation confirmation.
-
-**Verification:** manual flow plus `npm run lint && npm run typecheck`
-
-**Dependencies:** Task 8
-
-**Files:** `src/App.tsx`, `src/components/QuestionView.tsx`, one focused help
-component
-
-## Task 10: Challenge interface
-
-**Acceptance criteria:** learner supplies rationale; latest revision is primary;
-original judgment remains inspectable; duplicate submission is disabled.
-
-**Verification:** manual flow plus `npm run lint && npm run typecheck`
-
-**Dependencies:** Task 8
-
-**Files:** `src/App.tsx`, `src/components/FeedbackView.tsx`, one focused challenge
-component
-
-## Task 11: Review and full verification
-
-**Acceptance criteria:** session review shows help and challenge provenance;
-restart and offline recovery pass; docs reflect shipped behavior.
-
-**Verification:** `npm run lint && npm run typecheck && npm test && npm run
-format:check && npm run package`
-
-**Dependencies:** Tasks 9, 10
-
-**Files:** `src/components/SessionReview.tsx`, `docs/architecture.md`,
-`docs/roadmap.md`, `README.md`
+- [ ] No unresolved Critical or Required review finding.
+- [ ] No secret or learner fixture in tracked output.
+- [ ] Runtime dependency audit is clean; reachable build advisories are fixed or explicitly blocked.
+- [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run format:check`,
+      `npm run package`, and `npm run make` pass after the final change.
+- [ ] Packaged journey works with a fake provider and a fresh local profile.
+- [ ] Optional live smoke uses at most four explicit calls and captures sanitized fixtures.
+- [ ] Pull request to `main` explains product value, risks, verification, and release prerequisites.

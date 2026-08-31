@@ -1,94 +1,96 @@
-# Implementation Plan: Adaptive Learning Controls
+# Implementation Plan: Strata AI 0.1 Private Alpha
 
 ## Overview
 
-Add a persisted graduated-help ladder and an append-only evaluation challenge
-flow. This is the first Phase 3 vertical slice: it gives learners bounded agency
-when stuck or misjudged while preserving Strata AI's attempt-first interaction.
+Turn the implemented adaptive learning loop into a coherent macOS product a
+learner can configure and trust. The release candidate must preserve feedback
+across restarts, end with an attributable evidence summary, make provider data
+flow explicit, protect limited model credits, and package with deliberate release
+metadata. The plan favors completing the existing promise over adding breadth.
 
 ## Architecture Decisions
 
-- Deterministic application code owns permitted help escalation; the model only
-  generates the response for an allowed level.
-- Help requests attach to the current question and never advance the session.
-- Challenges attach to an immutable attempt, append evaluation revisions, and
-  may update only the still-unanswered child question.
-- SQLite migration 2 adds only provenance records; version-1 data is unchanged.
-- Existing IPC and provider boundaries gain named operations rather than raw
-  messaging or an orchestration dependency.
+- Keep SQLite and all provider/credential operations in Electron's main process.
+- Persist feedback acknowledgement instead of treating it as transient React state.
+- Derive session summaries locally from the latest stored evaluation revisions.
+- Store packaged credentials with Electron `safeStorage`; `.env` is development-only.
+- Make provider calls explicit, non-retrying, and coalesced in the main process.
+- Keep telemetry out of the private alpha and verify live AI behavior with a hard
+  four-call release-candidate budget.
+- Record ongoing choices in `docs/decision-log.md`.
 
-## Dependency Graph
+## Task List
 
-```text
-Help and challenge contracts
-  -> provider adapters and contract tests
-      -> migration and repository operations
-          -> authoritative service transitions
-              -> narrow IPC bridge
-                  -> reducer and UI controls
-                      -> restart and end-to-end verification
-```
+### Phase 1: Durable learning loop
 
-## Phase 1: Lock the model boundary
+- [ ] Task 1: Persist pending feedback and acknowledge continue explicitly
+- [ ] Task 2: Correct latest-revision session summaries and end-state counts
+- [ ] Task 3: Add deterministic evidence-based session payoff
 
-- [x] Task 1: Define and test graduated-help response contracts
-- [x] Task 2: Define and test evaluation-challenge provider behavior
+### Checkpoint: Trustworthy session lifecycle
 
-### Checkpoint: Model boundary
+- [ ] Closing after evaluation resumes at feedback
+- [ ] Continuing once activates exactly one persisted next question
+- [ ] Ending is instant, offline, and shows attributable evidence and gaps
+- [ ] Focused repository, service, reducer, and UI behavior tests pass
 
-- [x] Invalid, answer-leaking, or ungrounded output fails closed
-- [x] Existing evaluation fixtures remain green
+### Phase 2: Real-user onboarding and trust
 
-## Phase 2: Persist auditable learner control
+- [ ] Task 4: Add encrypted provider credential storage and validated IPC
+- [ ] Task 5: Build first-run setup and credential-management experience
+- [ ] Task 6: Expose uncertainty, next-move rationale, and revision provenance
+- [ ] Task 7: Make history loading errors and privacy/data flow explicit
 
-- [x] Task 3: Add the version-2 migration and history types
-- [x] Task 4: Append and reload idempotent help requests
-- [x] Task 5: Append evaluation revisions and challenge provenance
+### Checkpoint: Packaged app usability
 
-### Checkpoint: Durable domain
+- [ ] A new user can configure, replace, and remove a key without a terminal
+- [ ] Provider credentials never enter renderer state, logs, or tracked files
+- [ ] The interface explains which explicit actions send content to DeepSeek
+- [ ] The complete UI is keyboard navigable with meaningful focus transitions
 
-- [x] A version-1 database migrates without rewriting existing rows
-- [x] Help and challenge history survives database reopen
-- [x] Duplicate retries and stale challenges cannot create conflicting history
+### Phase 3: Credit safety and adaptive quality
 
-## Phase 3: Expose authoritative operations
+- [ ] Task 8: Disable automatic provider retries and coalesce concurrent requests
+- [ ] Task 9: Pass bounded recent evidence into adaptive evaluation
+- [ ] Task 10: Bound repeated help and show clear cost-conscious actions
 
-- [x] Task 6: Enforce help ladder and challenge rules in the learning service
-- [x] Task 7: Add strict named IPC and preload operations
-- [x] Task 8: Extend reducer states for help, challenge, retry, and rehydration
+### Checkpoint: Bounded provider behavior
 
-### Checkpoint: Process boundary
+- [ ] Concurrent identical operations cause one provider call
+- [ ] Retry behavior is explicit and tested with fakes
+- [ ] Context contains only the bounded recent turns needed for adaptation
+- [ ] No automated test requires a DeepSeek key or network call
 
-- [x] Invalid or unauthorized state transitions are rejected
-- [x] Provider failures preserve learner input and acknowledged history
-- [x] Renderer receives no new privileged capability
+### Phase 4: Release hardening
 
-## Phase 4: Complete the learner flow
+- [ ] Task 11: Deny navigation, popups, and unexpected Electron permissions
+- [ ] Task 12: Add 0.1 metadata, application identity, and release documentation
+- [ ] Task 13: Add deterministic CI and clean packaging gates
+- [ ] Task 14: Add local export/backup and database-open recovery guidance
+- [ ] Task 15: Add component and packaged critical-flow verification
 
-- [x] Task 9: Add accessible help controls and response display
-- [x] Task 10: Add challenge rationale and evaluation revision UI
-- [x] Task 11: Show help and revision provenance in session review
+### Checkpoint: Release candidate
 
-### Checkpoint: Complete
-
-- [x] Full five-level help flow works without advancing the session
-- [x] Latest evaluation is clear and prior revisions remain inspectable
-- [x] Restart, offline retry, stale challenge, and ended-session flows pass
-- [x] `npm run lint`, `npm run typecheck`, `npm test`,
-      `npm run format:check`, and `npm run package` pass
+- [ ] Lint, typecheck, tests, formatting, audit triage, package, and make pass
+- [ ] Fresh and migrated databases complete the mocked packaged flow
+- [ ] Packaged UI is visually reviewed at supported window sizes
+- [ ] One optional live four-call smoke passes without automatic retries
+- [ ] Release, rollback, privacy, and signing/notarization requirements are documented
+- [ ] Independent product, architecture, security, and code reviews are resolved
 
 ## Risks and Mitigations
 
-| Risk                                           | Impact | Mitigation                                                                     |
-| ---------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
-| Early help leaks the answer                    | High   | Level-specific schemas, prompts, fixtures, and manual adversarial checks       |
-| Challenge becomes evaluation shopping          | High   | One explicit rationale, append-only provenance, and visible revision history   |
-| Current next question diverges after revision  | High   | Replace only the active branch pointer transactionally; preserve prior records |
-| Retried calls create duplicate charges or rows | Medium | Client request IDs and acknowledged-result replay                              |
-| Migration harms existing local history         | High   | Version-1 migration fixture, additive tables, transaction, and reopen test     |
+| Risk                                      | Impact | Mitigation                                                            |
+| ----------------------------------------- | ------ | --------------------------------------------------------------------- |
+| Migration skips or duplicates feedback    | High   | Additive state, transaction tests, version-1/2 migration fixtures     |
+| Credential is exposed to renderer or disk | High   | Main-process adapter, `safeStorage`, IPC allowlist, secret scans      |
+| Concurrent retries spend credits twice    | High   | Authoritative in-flight coalescing and SDK retries disabled           |
+| Deterministic summary overstates learning | High   | Use exact latest evidence and provisional labels; no mastery score    |
+| Build-chain advisories block release      | High   | Triage reachability and upgrade Forge safely; never force audit fixes |
+| UI polish drifts across flows             | Medium | Shared theme, compact layout vocabulary, packaged visual review       |
+| Signing credentials are unavailable       | Medium | Prepare config/docs; mark public distribution blocked until supplied  |
 
-## Approval Gate
+## Open Questions
 
-Implementation starts after founder approval of
-`docs/adaptive-learning-controls.md`, especially migration 2 and the permitted
-update of a still-unanswered child question after a successful challenge.
+None currently require owner input. Apple signing/notarization credentials become
+an external prerequisite only when publishing beyond a private local alpha.

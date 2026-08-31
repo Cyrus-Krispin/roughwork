@@ -62,6 +62,7 @@ Unsigned development builds are intended only for local use. Code signing and no
 - [Product specification](docs/product-spec.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
+- [Decision log](docs/decision-log.md)
 - [Local session persistence](docs/local-session-persistence.md)
 - [Proposed adaptive learning controls](docs/adaptive-learning-controls.md)
 - [Implementation plan](tasks/plan.md)
