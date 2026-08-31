@@ -13,7 +13,7 @@ type SessionSummaryProps = {
 
 const statusLabels: Record<EvaluationResult['status'], string> = {
   demonstrated: 'demonstrated',
-  partial: 'developing',
+  partial: 'partial evidence',
   misconception: 'needs correction',
   uncertain: 'uncertain',
 };
@@ -30,8 +30,8 @@ export function SessionSummary({ turns }: SessionSummaryProps) {
     summary.revisedJudgments
       ? summary.revisedJudgments +
         (summary.revisedJudgments === 1
-          ? ' judgment revised'
-          : ' judgments revised')
+          ? ' evaluation reconsidered'
+          : ' evaluation reconsiderations')
       : '',
   ].filter(Boolean);
 

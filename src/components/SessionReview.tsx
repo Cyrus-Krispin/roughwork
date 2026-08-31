@@ -23,6 +23,12 @@ export function SessionReview({
   headingLabel = 'Session history',
   actionLabel = 'Back to topics',
 }: SessionReviewProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
     <Box component="main" sx={{ px: { xs: 2.5, sm: 6 }, py: 6 }}>
       <Box sx={{ width: 'min(100%, 56rem)', mx: 'auto' }}>
@@ -32,6 +38,8 @@ export function SessionReview({
         <Typography
           component="h1"
           variant="h1"
+          ref={headingRef}
+          tabIndex={-1}
           sx={{ mt: 1, fontSize: '3rem' }}
         >
           {topic}
@@ -116,3 +124,4 @@ export function SessionReview({
     </Box>
   );
 }
+import { useEffect, useRef } from 'react';
