@@ -50,6 +50,19 @@ test('pins the 0.1 macOS product identity and toolchain', async () => {
   assert.match(workflow, /runner: macos-15\b/u);
   assert.match(workflow, /runner: macos-15-intel\b/u);
   assert.doesNotMatch(workflow, /macos-14/u);
+  const releaseActions = Array.from(
+    workflow.matchAll(
+      /^\s*- uses: actions\/(checkout|setup-node|upload-artifact)@(\S+)/gmu,
+    ),
+    ([, action, revision]) => `${action}@${revision}`,
+  );
+  assert.deepEqual(releaseActions, [
+    'checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
+    'setup-node@820762786026740c76f36085b0efc47a31fe5020',
+    'checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
+    'setup-node@820762786026740c76f36085b0efc47a31fe5020',
+    'upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
+  ]);
   assert.equal(
     packageJson.scripts['verify:packaged-flow'],
     'node scripts/verify-packaged-flow.mjs',

@@ -232,3 +232,22 @@ decisions are superseded rather than silently rewritten.
   not block offline ownership actions, and accessible completion becomes part of
   the packaged journey.
 - **Reversibility:** High; runner and interaction policies can evolve independently.
+
+## D014 — Keep CI actions on supported Node runtimes
+
+- **Status:** Accepted
+- **Date:** 2026-09-01
+- **Decision:** Use the current Node 24 releases of `actions/checkout`,
+  `actions/setup-node`, and `actions/upload-artifact`, pin every use to its reviewed
+  full commit SHA, retain the semantic version in a comment, and enforce the exact
+  action set in the release configuration test.
+- **Why:** GitHub-hosted runners warned that the previous action majors used a
+  deprecated Node 20 action runtime. The selected majors use Node 24 and are
+  compatible with the hosted runner version already executing this release.
+- **Alternatives:** Accept the warning until GitHub force-upgrades the actions.
+  Rejected because release automation should not depend on an announced fallback.
+- **Consequences:** Action code cannot change without a repository diff. Future
+  action updates must change the executable workflow and its release invariant
+  together, after compatibility and provenance review.
+- **Reversibility:** High; the pins can advance through another reviewed, verified
+  configuration change.
